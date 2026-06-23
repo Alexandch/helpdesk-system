@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: helpdesk-config
+  namespace: helpdesk
+data:
+  REDIS_URL: redis://redis:6379/0
+  REDIS_ENABLED: "true"
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  KAFKA_ENABLED: "true"
+  NOTIFICATION_TOPIC: ticket-events
+  AUDIT_TOPIC: audit-events
+  JWT_ALGORITHM: HS256
+  ACCESS_TOKEN_EXPIRE_MINUTES: "120"
+  ADMIN_EMAIL: admin@example.com
+---
+# Учебные значения. Перед публикацией замените их и не храните реальные
+# пароли в Git. Для production используйте внешний менеджер секретов.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: helpdesk-secrets
+  namespace: helpdesk
+type: Opaque
+stringData:
+  POSTGRES_DB: helpdesk
+  POSTGRES_USER: helpdesk
+  POSTGRES_PASSWORD: helpdesk
+  DATABASE_URL: postgresql+psycopg2://helpdesk:helpdesk@postgres:5432/helpdesk
+  JWT_SECRET_KEY: change-me-before-production
+  ADMIN_PASSWORD: admin12345

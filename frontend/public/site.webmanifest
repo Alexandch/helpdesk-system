@@ -1,0 +1,16 @@
+{
+  "name": "Система обработки обращений",
+  "short_name": "Обращения",
+  "description": "Система управления обращениями и коммуникацией с клиентами",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f2f6fc",
+  "theme_color": "#111b37",
+  "icons": [
+    {
+      "src": "/branding/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

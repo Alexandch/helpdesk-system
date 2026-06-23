@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - 00-namespace.yaml
+  - 01-configuration.yaml
+  - 02-postgres.yaml
+  - 03-redis.yaml
+  - 04-zookeeper.yaml
+  - 05-kafka.yaml
+  - 06-backend.yaml
+  - 07-workers.yaml
+  - 08-frontend.yaml
+  - 09-observability-tools.yaml
