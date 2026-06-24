@@ -540,6 +540,14 @@ td { color: #4f5e76; font-size: 13px; }
 .auth-card h1 { font-size: 28px; letter-spacing: -.7px; margin: 4px 0 0; }
 .auth-card > p { color: #6d7990; margin: -5px 0 4px; }
 .auth-card label { color: #46546d; display: grid; font-size: 13px; font-weight: 650; gap: 7px; }
+.auth-toggle {
+  background: transparent;
+  box-shadow: none;
+  color: #356df3;
+  justify-self: center;
+  padding: 4px 8px;
+}
+.auth-toggle:hover { background: #eef3ff; box-shadow: none; transform: none; }
 .auth-logo {
   border-radius: 15px;
   box-shadow: 0 12px 28px rgba(31, 75, 211, .28);

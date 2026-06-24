@@ -54,8 +54,10 @@ function BrandIcon({ className = "" }) {
 }
 
 function Login({ onLogin, language, setLanguage, t }) {
-  const [email, setEmail] = useState("admin@example.com");
-  const [password, setPassword] = useState("admin12345");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [mode, setMode] = useState("login");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -64,6 +66,12 @@ function Login({ onLogin, language, setLanguage, t }) {
     setError("");
     setSubmitting(true);
     try {
+      if (mode === "register") {
+        await api("/auth/register", {
+          method: "POST",
+          body: JSON.stringify({ email, password, full_name: fullName })
+        });
+      }
       const result = await api("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password })
@@ -83,12 +91,25 @@ function Login({ onLogin, language, setLanguage, t }) {
       <form className="card auth-card animate-in" onSubmit={submit}>
         <BrandIcon className="auth-logo" />
         <h1>{t("appName")}</h1>
-        <p>{t("loginHint")}</p>
+        <p>{mode === "login" ? t("loginHint") : t("registerHint")}</p>
+        {mode === "register" && (
+          <label>{t("fullName")}<input required minLength="2" value={fullName} onChange={(e) => setFullName(e.target.value)} /></label>
+        )}
         <label>{t("email")}<input value={email} onChange={(e) => setEmail(e.target.value)} /></label>
         <label>{t("password")}<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         {error && <div className="error">{error}</div>}
         <button type="submit" disabled={submitting}>
-          {submitting ? <Spinner text={t("loading")} /> : t("signIn")}
+          {submitting ? <Spinner text={t("loading")} /> : mode === "login" ? t("signIn") : t("signUp")}
+        </button>
+        <button
+          className="link-button auth-toggle"
+          type="button"
+          onClick={() => {
+            setError("");
+            setMode(mode === "login" ? "register" : "login");
+          }}
+        >
+          {mode === "login" ? t("needAccount") : t("haveAccount")}
         </button>
       </form>
     </main>
