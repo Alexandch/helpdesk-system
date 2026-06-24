@@ -4,7 +4,7 @@
   publish = "dist"
 
 [build.environment]
-  VITE_API_URL = "https://helpdesk-backend.onrender.com/api/v1"
+  VITE_API_URL = "https://helpdesk-backend-vvws.onrender.com/api/v1"
 
 [[redirects]]
   from = "/*"
