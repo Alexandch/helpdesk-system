@@ -7,6 +7,7 @@ from typing import Any
 from aiokafka import AIOKafkaProducer
 
 from app.core.config import settings
+from app.services.event_fallback import handle_event_without_broker
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,8 @@ class EventPublisher:
         }
         if not self._producer:
             logger.info("Kafka event skipped: %s", event)
+            if settings.event_fallback_enabled:
+                handle_event_without_broker(topic, event_type, payload)
             return
         await self._producer.send_and_wait(topic, json.dumps(event, ensure_ascii=False).encode("utf-8"))
 

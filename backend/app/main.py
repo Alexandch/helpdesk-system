@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import settings
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from app.db.session import Base, SessionLocal, engine
 from app.models.enums import UserRole
@@ -16,6 +16,16 @@ from app.services.users import create_user, get_user_by_email
 
 def bootstrap_database() -> None:
     Base.metadata.create_all(bind=engine)
+    existing_columns = {column["name"] for column in inspect(engine).get_columns("users")}
+    if "email_notifications_enabled" not in existing_columns:
+        default_value = "TRUE" if engine.dialect.name == "postgresql" else "1"
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "ALTER TABLE users "
+                    f"ADD COLUMN email_notifications_enabled BOOLEAN NOT NULL DEFAULT {default_value}"
+                )
+            )
     if engine.dialect.name == "postgresql":
         for value in ("SUPER_ADMIN", "AGENT"):
             with engine.begin() as connection:

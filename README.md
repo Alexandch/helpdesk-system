@@ -10,7 +10,9 @@
 - GitHub: https://github.com/Alexandch/helpdesk-system
 - GitLab: https://gitlab.com/aleksandch-group/helpdesk-system
 
-Для публичной demo-версии клиентская часть развёрнута на Netlify, серверная часть FastAPI — на Render, база данных PostgreSQL — в Supabase. Redis и Kafka в публичном demo-режиме отключены переменными окружения, а полная инфраструктура с Redis, Kafka, Notification Service и Audit Service демонстрируется локально через Docker Compose и Kubernetes.
+Для публичной demo-версии клиентская часть развёрнута на Netlify, серверная часть FastAPI — на Render, база данных PostgreSQL — в Supabase. Redis и Kafka в публичном demo-режиме отключены переменными окружения, а уведомления и аудит создаются напрямую backend-ом через fallback-режим. Полная инфраструктура с Redis, Kafka, Notification Service и Audit Service демонстрируется локально через Docker Compose и Kubernetes.
+
+Email-уведомления поддерживают пользовательское согласие: в разделе «Уведомления» пользователь может разрешить или запретить отправку писем. Реальная отправка email включается настройками SMTP на сервере.
 
 Тестовый супер-администратор публичной версии:
 

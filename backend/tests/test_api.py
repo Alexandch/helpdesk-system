@@ -282,6 +282,51 @@ async def test_user_can_read_notifications_and_admin_can_read_audit(client: http
 
 
 @pytest.mark.anyio
+async def test_kafka_disabled_fallback_creates_notifications_and_audit(client: httpx.AsyncClient) -> None:
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    client_headers = await auth_headers(client, "client@example.com", "password123")
+    admin_headers = await auth_headers(client, "admin@example.com", "admin12345")
+
+    response = await client.post(
+        "/api/v1/tickets",
+        headers=client_headers,
+        json={"title": "Production notification", "description": "Fallback notification check", "priority": "MEDIUM"},
+    )
+    assert response.status_code == 201
+
+    notifications = await client.get("/api/v1/notifications", headers=client_headers)
+    assert notifications.status_code == 200
+    assert any(item["event_type"] == "ticket.created" for item in notifications.json())
+
+    audit = await client.get("/api/v1/audit-logs", headers=admin_headers)
+    assert audit.status_code == 200
+    assert any(item["action"] == "ticket.created" for item in audit.json())
+
+
+@pytest.mark.anyio
+async def test_user_can_update_email_notification_preference(client: httpx.AsyncClient) -> None:
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    headers = await auth_headers(client, "client@example.com", "password123")
+
+    response = await client.patch(
+        "/api/v1/users/me/preferences",
+        headers=headers,
+        json={"email_notifications_enabled": False},
+    )
+    assert response.status_code == 200
+    assert response.json()["email_notifications_enabled"] is False
+
+    me = await client.get("/api/v1/auth/me", headers=headers)
+    assert me.json()["email_notifications_enabled"] is False
+
+
+@pytest.mark.anyio
 async def test_conversation_unread_counter_is_cleared_after_read(client: httpx.AsyncClient) -> None:
     agent = create_test_agent()
     await client.post(

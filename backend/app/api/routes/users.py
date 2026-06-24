@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_super_admin
+from app.api.deps import get_current_user, require_super_admin
 from app.db.session import get_db
 from app.models.enums import UserRole
 from app.models.user import User
-from app.schemas.user import UserRead, UserUpdate
+from app.schemas.user import UserPreferencesUpdate, UserRead, UserUpdate
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -44,3 +44,16 @@ def update_user(user_id: str, payload: UserUpdate, current_user: User = Depends(
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.patch("/me/preferences", response_model=UserRead)
+def update_preferences(
+    payload: UserPreferencesUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    current_user.email_notifications_enabled = payload.email_notifications_enabled
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    return current_user

@@ -11,6 +11,7 @@ class UserRead(BaseModel):
     full_name: str
     role: UserRole
     is_active: bool
+    email_notifications_enabled: bool = True
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -21,3 +22,6 @@ class UserUpdate(BaseModel):
     role: UserRole | None = None
     is_active: bool | None = None
 
+
+class UserPreferencesUpdate(BaseModel):
+    email_notifications_enabled: bool

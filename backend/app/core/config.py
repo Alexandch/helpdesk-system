@@ -12,6 +12,15 @@ class Settings(BaseSettings):
     redis_enabled: bool = True
     kafka_bootstrap_servers: str = "localhost:9092"
     kafka_enabled: bool = True
+    event_fallback_enabled: bool = True
+
+    email_delivery_enabled: bool = False
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str = "noreply@example.com"
+    smtp_use_tls: bool = True
 
     jwt_secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"

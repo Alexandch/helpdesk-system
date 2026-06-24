@@ -46,6 +46,7 @@ DATABASE_URL=postgresql+psycopg2://<user>:<password>@<host>:5432/<database>
 REDIS_URL=redis://<user>:<password>@<host>:6379/0
 REDIS_ENABLED=true
 KAFKA_ENABLED=false
+EVENT_FALLBACK_ENABLED=true
 JWT_SECRET_KEY=<long-random-secret>
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=120
@@ -57,6 +58,25 @@ ADMIN_PASSWORD=<strong-password>
 
 ```env
 REDIS_ENABLED=false
+```
+
+При `KAFKA_ENABLED=false` backend использует fallback-режим: уведомления и
+аудит создаются напрямую в PostgreSQL без Kafka и отдельных worker-сервисов.
+Это позволяет публичной demo-версии сохранять пользовательский сценарий на
+бесплатном хостинге.
+
+Email-уведомления включаются отдельно. Пользователь управляет согласием на
+получение писем в разделе «Уведомления». Реальная отправка писем начнётся
+только после настройки SMTP:
+
+```env
+EMAIL_DELIVERY_ENABLED=true
+SMTP_HOST=<smtp-host>
+SMTP_PORT=587
+SMTP_USERNAME=<smtp-user>
+SMTP_PASSWORD=<smtp-password>
+SMTP_FROM=<sender-email>
+SMTP_USE_TLS=true
 ```
 
 ## 3. PostgreSQL

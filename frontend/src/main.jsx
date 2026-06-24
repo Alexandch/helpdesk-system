@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Activity, BarChart3, Bell, CheckCheck, ChevronRight, Database, FileClock,
-  Gauge, Languages, LoaderCircle, LogOut, MessageSquare, Plus, RefreshCw,
+  Gauge, Languages, LoaderCircle, LogOut, Mail, MessageSquare, Plus, RefreshCw,
   Search, Server, ShieldCheck, Ticket, TrendingUp, UserCog, Users, X
 } from "lucide-react";
 
@@ -442,6 +442,7 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(user.email_notifications_enabled ?? true);
 
   async function load(silent = false) {
     if (silent) setRefreshing(true); else setLoading(true);
@@ -523,6 +524,20 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
   async function readAll() {
     await api("/notifications/read-all", { method: "POST" });
     await load(true);
+  }
+
+  async function updateEmailPreference(enabled) {
+    const previous = emailNotificationsEnabled;
+    setEmailNotificationsEnabled(enabled);
+    try {
+      await api("/users/me/preferences", {
+        method: "PATCH",
+        body: JSON.stringify({ email_notifications_enabled: enabled })
+      });
+    } catch (err) {
+      setEmailNotificationsEnabled(previous);
+      setError(err.message);
+    }
   }
 
   async function updateUserRole(userId, role) {
@@ -634,6 +649,23 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
             </>}
 
             {section === "notifications" && <div>
+              <section className="card preference-card">
+                <div>
+                  <Mail />
+                  <div>
+                    <h3>{t("emailNotifications")}</h3>
+                    <p>{t("emailNotificationsHint")}</p>
+                  </div>
+                </div>
+                <label className="switch-row">
+                  <input
+                    type="checkbox"
+                    checked={emailNotificationsEnabled}
+                    onChange={(event) => updateEmailPreference(event.target.checked)}
+                  />
+                  <span>{emailNotificationsEnabled ? t("enabled") : t("disabled")}</span>
+                </label>
+              </section>
               <div className="section-actions"><button onClick={readAll}><CheckCheck />{t("readAll")}</button></div>
               <div className="timeline">{notifications.length === 0 && <div className="card empty">{t("noNotifications")}</div>}
                 {notifications.map((n) => <article className={`card timeline-item ${n.is_read ? "" : "unread"}`} key={n.id} onClick={() => openNotification(n)}>
