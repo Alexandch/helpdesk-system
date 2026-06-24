@@ -45,16 +45,16 @@ def infer_entity(payload: dict) -> tuple[str, str | None]:
     return "system", None
 
 
-def send_email_notification(user: User, title: str, body: str) -> None:
+def send_email_notification(user: User, title: str, body: str) -> str:
     if not settings.email_delivery_enabled:
         logger.info("Email notification skipped by settings: user=%s title=%s", user.email, title)
-        return
+        return "disabled_by_settings"
     if not user.email_notifications_enabled:
         logger.info("Email notification skipped by user preference: user=%s", user.email)
-        return
+        return "disabled_by_user"
     if not settings.smtp_host:
         logger.warning("Email delivery is enabled, but SMTP_HOST is not configured")
-        return
+        return "smtp_not_configured"
 
     message = EmailMessage()
     message["Subject"] = title
@@ -69,6 +69,7 @@ def send_email_notification(user: User, title: str, body: str) -> None:
             smtp.login(settings.smtp_username, settings.smtp_password)
         smtp.send_message(message)
     logger.info("Email notification sent: user=%s title=%s", user.email, title)
+    return "sent"
 
 
 def save_notification_event(event_type: str, payload: dict) -> None:
@@ -98,7 +99,8 @@ def save_notification_event(event_type: str, payload: dict) -> None:
         db.commit()
         for user in users:
             try:
-                send_email_notification(user, title, body)
+                status = send_email_notification(user, title, body)
+                logger.info("Email notification status: user=%s status=%s", user.email, status)
             except Exception:
                 logger.exception("Email notification failed: user=%s", user.email)
         logger.info("Fallback notifications saved: type=%s recipients=%s", event_type, recipient_ids)

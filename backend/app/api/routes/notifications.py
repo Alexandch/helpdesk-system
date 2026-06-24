@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.models.system import Notification
 from app.models.user import User
 from app.schemas.system import NotificationCount, NotificationRead
+from app.services.event_fallback import send_email_notification
 
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -36,6 +37,31 @@ def unread_count(
         )
     )
     return NotificationCount(unread=count or 0)
+
+
+@router.post("/test-email")
+def send_test_email(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    title = "Тестовое уведомление HelpDesk"
+    body = "Если вы получили это письмо, SMTP-уведомления HelpDesk настроены корректно."
+    notification = Notification(
+        user_id=current_user.id,
+        event_type="email.test",
+        title=title,
+        body=body,
+        entity_id=None,
+        is_read=False,
+    )
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)
+    try:
+        email_status = send_email_notification(current_user, title, body)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Email delivery failed: {exc.__class__.__name__}") from exc
+    return {"notification_id": notification.id, "email_status": email_status}
 
 
 @router.patch("/{notification_id}/read", response_model=NotificationRead)

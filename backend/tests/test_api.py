@@ -327,6 +327,19 @@ async def test_user_can_update_email_notification_preference(client: httpx.Async
 
 
 @pytest.mark.anyio
+async def test_user_can_request_test_email_status(client: httpx.AsyncClient) -> None:
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    headers = await auth_headers(client, "client@example.com", "password123")
+
+    response = await client.post("/api/v1/notifications/test-email", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["email_status"] == "disabled_by_settings"
+
+
+@pytest.mark.anyio
 async def test_conversation_unread_counter_is_cleared_after_read(client: httpx.AsyncClient) -> None:
     agent = create_test_agent()
     await client.post(
