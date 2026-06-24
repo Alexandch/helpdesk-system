@@ -3,6 +3,9 @@
   command = "npm install && npm run build"
   publish = "dist"
 
+[build.environment]
+  VITE_API_URL = "https://helpdesk-backend.onrender.com/api/v1"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
