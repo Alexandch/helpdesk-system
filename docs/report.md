@@ -66,3 +66,22 @@
 - внедрение Alembic для миграций БД;
 - развёртывание в Kubernetes с Helm;
 - добавление CI/CD.
+
+## Публичная версия проекта
+
+Проект опубликован в открытом доступе:
+
+- Frontend: https://helpdesk-system-1.netlify.app
+- Backend API: https://helpdesk-backend-vvws.onrender.com
+- Swagger/OpenAPI: https://helpdesk-backend-vvws.onrender.com/docs
+- GitHub: https://github.com/Alexandch/helpdesk-system
+- GitLab: https://gitlab.com/aleksandch-group/helpdesk-system
+
+Публичная версия развёрнута в demo-режиме: frontend размещён на Netlify, backend FastAPI — на Render, PostgreSQL — в Supabase. Для уменьшения требований к бесплатному хостингу Redis и Kafka в публичной версии отключены, при этом полная инфраструктура с Redis, Apache Kafka, Notification Service и Audit Service разворачивается локально через Docker Compose и Kubernetes.
+
+Для проверки опубликованной версии используется супер-администратор:
+
+- email: `admin@example.com`
+- password: `Admin12345!`
+
+Если пользователь отсутствует в системе, он может зарегистрироваться через веб-интерфейс. После регистрации он получает роль `USER`, может создавать обращения и просматривать только собственные тикеты. При необходимости супер-администратор назначает зарегистрированному пользователю роль `AGENT` для проверки сценария обработки обращений исполнителем.

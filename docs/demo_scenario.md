@@ -68,3 +68,17 @@ docker compose exec redis redis-cli MONITOR
 
 После обновления страницы будут видны команды `GET`, `SETEX`, `DEL`.
 
+## Публичная demo-версия
+
+Опубликованная версия доступна по адресам:
+
+- Frontend: https://helpdesk-system-1.netlify.app
+- Backend API: https://helpdesk-backend-vvws.onrender.com
+- Swagger/OpenAPI: https://helpdesk-backend-vvws.onrender.com/docs
+
+Для входа под супер-администратором:
+
+- email: `admin@example.com`
+- password: `Admin12345!`
+
+Если пользователь ещё не зарегистрирован, нужно открыть форму регистрации в веб-интерфейсе и создать новую учётную запись. Такой пользователь автоматически получает роль `USER`, может создавать обращения и видеть только свои тикеты. Для проверки работы исполнителя супер-администратор может открыть управление пользователями и изменить роль нужной учётной записи на `AGENT`.

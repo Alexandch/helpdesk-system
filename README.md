@@ -1,5 +1,24 @@
 # HelpDesk System
 
+## Публичная демонстрация
+
+Проект опубликован в открытом доступе:
+
+- Frontend: https://helpdesk-system-1.netlify.app
+- Backend API: https://helpdesk-backend-vvws.onrender.com
+- Swagger/OpenAPI: https://helpdesk-backend-vvws.onrender.com/docs
+- GitHub: https://github.com/Alexandch/helpdesk-system
+- GitLab: https://gitlab.com/aleksandch-group/helpdesk-system
+
+Для публичной demo-версии клиентская часть развёрнута на Netlify, серверная часть FastAPI — на Render, база данных PostgreSQL — в Supabase. Redis и Kafka в публичном demo-режиме отключены переменными окружения, а полная инфраструктура с Redis, Kafka, Notification Service и Audit Service демонстрируется локально через Docker Compose и Kubernetes.
+
+Тестовый супер-администратор публичной версии:
+
+- email: `admin@example.com`
+- password: `Admin12345!`
+
+Если пользователь не зарегистрирован, он может создать учётную запись через форму регистрации в веб-интерфейсе. Новые пользователи получают роль `USER`, могут создавать свои обращения и видеть только собственные данные. Для проверки роли исполнителя супер-администратор может изменить роль зарегистрированного пользователя на `AGENT` в панели управления пользователями.
+
 Учебно-практическая система обработки обращений клиентов на FastAPI, React, PostgreSQL, Redis и Apache Kafka.
 
 ## Состав проекта
