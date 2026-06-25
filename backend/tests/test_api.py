@@ -90,6 +90,17 @@ async def test_user_can_register_login_and_create_ticket(client: httpx.AsyncClie
 
 
 @pytest.mark.anyio
+async def test_swagger_oauth_form_login_is_supported(client: httpx.AsyncClient) -> None:
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "admin@example.com", "password": "admin12345"},
+    )
+    assert response.status_code == 200
+    assert response.json()["token_type"] == "bearer"
+    assert response.json()["access_token"]
+
+
+@pytest.mark.anyio
 async def test_regular_user_cannot_change_status(client: httpx.AsyncClient) -> None:
     await client.post(
         "/api/v1/auth/register",
