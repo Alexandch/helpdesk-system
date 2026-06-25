@@ -60,7 +60,14 @@ def send_test_email(
     try:
         email_status = send_email_notification(current_user, title, body)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Email delivery failed: {exc.__class__.__name__}") from exc
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Email delivery failed",
+                "error_type": exc.__class__.__name__,
+                "error": str(exc),
+            },
+        ) from exc
     return {"notification_id": notification.id, "email_status": email_status}
 
 
