@@ -15,12 +15,15 @@ class Settings(BaseSettings):
     event_fallback_enabled: bool = True
 
     email_delivery_enabled: bool = False
+    email_provider: str = "smtp"
     smtp_host: str | None = None
     smtp_port: int = 587
     smtp_username: str | None = None
     smtp_password: str | None = None
     smtp_from: str = "noreply@example.com"
     smtp_use_tls: bool = True
+    resend_api_key: str | None = None
+    resend_from: str = "HelpDesk <onboarding@resend.dev>"
 
     jwt_secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"

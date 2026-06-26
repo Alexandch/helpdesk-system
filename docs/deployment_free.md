@@ -71,6 +71,7 @@ Email-уведомления включаются отдельно. Пользо
 
 ```env
 EMAIL_DELIVERY_ENABLED=true
+EMAIL_PROVIDER=smtp
 SMTP_HOST=<smtp-host>
 SMTP_PORT=587
 SMTP_USERNAME=<smtp-user>
@@ -78,6 +79,19 @@ SMTP_PASSWORD=<smtp-password>
 SMTP_FROM=<sender-email>
 SMTP_USE_TLS=true
 ```
+
+Если SMTP-порт недоступен на хостинге, можно использовать HTTPS API Resend:
+
+```env
+EMAIL_DELIVERY_ENABLED=true
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=<resend-api-key>
+RESEND_FROM=HelpDesk <verified-sender@example.com>
+```
+
+Resend принимает отправку через `POST /emails` и требует поля `from`, `to`,
+`subject` и контент письма. Для отправки писем любым пользователям нужно
+использовать подтверждённый отправитель или домен.
 
 ## 3. PostgreSQL
 

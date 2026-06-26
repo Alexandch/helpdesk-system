@@ -1,5 +1,8 @@
 import logging
 import smtplib
+import json
+import urllib.error
+import urllib.request
 from email.message import EmailMessage
 from uuid import uuid4
 
@@ -45,13 +48,7 @@ def infer_entity(payload: dict) -> tuple[str, str | None]:
     return "system", None
 
 
-def send_email_notification(user: User, title: str, body: str) -> str:
-    if not settings.email_delivery_enabled:
-        logger.info("Email notification skipped by settings: user=%s title=%s", user.email, title)
-        return "disabled_by_settings"
-    if not user.email_notifications_enabled:
-        logger.info("Email notification skipped by user preference: user=%s", user.email)
-        return "disabled_by_user"
+def send_email_via_smtp(user: User, title: str, body: str) -> str:
     if not settings.smtp_host:
         logger.warning("Email delivery is enabled, but SMTP_HOST is not configured")
         return "smtp_not_configured"
@@ -68,8 +65,59 @@ def send_email_notification(user: User, title: str, body: str) -> str:
         if settings.smtp_username and settings.smtp_password:
             smtp.login(settings.smtp_username, settings.smtp_password)
         smtp.send_message(message)
-    logger.info("Email notification sent: user=%s title=%s", user.email, title)
     return "sent"
+
+
+def send_email_via_resend(user: User, title: str, body: str) -> str:
+    if not settings.resend_api_key:
+        logger.warning("Email delivery is enabled, but RESEND_API_KEY is not configured")
+        return "resend_not_configured"
+
+    payload = json.dumps(
+        {
+            "from": settings.resend_from,
+            "to": [user.email],
+            "subject": title,
+            "text": body,
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {settings.resend_api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            if 200 <= response.status < 300:
+                return "sent"
+            return f"resend_http_{response.status}"
+    except urllib.error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Resend API error {exc.code}: {details}") from exc
+
+
+def send_email_notification(user: User, title: str, body: str) -> str:
+    if not settings.email_delivery_enabled:
+        logger.info("Email notification skipped by settings: user=%s title=%s", user.email, title)
+        return "disabled_by_settings"
+    if not user.email_notifications_enabled:
+        logger.info("Email notification skipped by user preference: user=%s", user.email)
+        return "disabled_by_user"
+
+    provider = settings.email_provider.lower()
+    if provider == "resend":
+        status = send_email_via_resend(user, title, body)
+    elif provider == "smtp":
+        status = send_email_via_smtp(user, title, body)
+    else:
+        logger.warning("Unknown email provider: %s", settings.email_provider)
+        return "unknown_email_provider"
+    logger.info("Email notification sent: user=%s title=%s", user.email, title)
+    return status
 
 
 def save_notification_event(event_type: str, payload: dict) -> None:
