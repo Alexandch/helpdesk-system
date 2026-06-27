@@ -17,13 +17,29 @@ from app.services.users import create_user, get_user_by_email
 def bootstrap_database() -> None:
     Base.metadata.create_all(bind=engine)
     existing_columns = {column["name"] for column in inspect(engine).get_columns("users")}
-    if "email_notifications_enabled" not in existing_columns:
-        default_value = "TRUE" if engine.dialect.name == "postgresql" else "1"
+    boolean_defaults = {
+        "email_notifications_enabled": True,
+        "telegram_notifications_enabled": False,
+    }
+    for column_name, default_enabled in boolean_defaults.items():
+        if column_name not in existing_columns:
+            if engine.dialect.name == "postgresql":
+                default_value = "TRUE" if default_enabled else "FALSE"
+            else:
+                default_value = "1" if default_enabled else "0"
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "ALTER TABLE users "
+                        f"ADD COLUMN {column_name} BOOLEAN NOT NULL DEFAULT {default_value}"
+                    )
+                )
+    if "telegram_chat_id" not in existing_columns:
         with engine.begin() as connection:
             connection.execute(
                 text(
                     "ALTER TABLE users "
-                    f"ADD COLUMN email_notifications_enabled BOOLEAN NOT NULL DEFAULT {default_value}"
+                    "ADD COLUMN telegram_chat_id VARCHAR(64)"
                 )
             )
     if engine.dialect.name == "postgresql":

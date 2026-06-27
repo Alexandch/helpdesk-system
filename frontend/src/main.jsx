@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   Activity, BarChart3, Bell, CheckCheck, ChevronRight, Database, FileClock,
   Gauge, Languages, LoaderCircle, LogOut, Mail, MessageSquare, Plus, RefreshCw,
-  Search, Server, ShieldCheck, Ticket, TrendingUp, UserCog, Users, X
+  Search, Send, Server, ShieldCheck, Ticket, TrendingUp, UserCog, Users, X
 } from "lucide-react";
 
 import { api, clearToken, getToken, setToken } from "./api/client";
@@ -443,6 +443,10 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
   const [refreshing, setRefreshing] = useState(false);
   const [creating, setCreating] = useState(false);
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(user.email_notifications_enabled ?? true);
+  const [telegramNotificationsEnabled, setTelegramNotificationsEnabled] = useState(user.telegram_notifications_enabled ?? false);
+  const [telegramChatId, setTelegramChatId] = useState(user.telegram_chat_id ?? "");
+  const [telegramTesting, setTelegramTesting] = useState(false);
+  const [preferenceStatus, setPreferenceStatus] = useState("");
 
   async function load(silent = false) {
     if (silent) setRefreshing(true); else setLoading(true);
@@ -527,16 +531,53 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
   }
 
   async function updateEmailPreference(enabled) {
-    const previous = emailNotificationsEnabled;
-    setEmailNotificationsEnabled(enabled);
+    await updateNotificationPreferences({ email_notifications_enabled: enabled });
+  }
+
+  async function updateNotificationPreferences(patch) {
+    const previous = {
+      emailNotificationsEnabled,
+      telegramNotificationsEnabled,
+      telegramChatId,
+      preferenceStatus
+    };
+    if ("email_notifications_enabled" in patch) setEmailNotificationsEnabled(patch.email_notifications_enabled);
+    if ("telegram_notifications_enabled" in patch) setTelegramNotificationsEnabled(patch.telegram_notifications_enabled);
+    if ("telegram_chat_id" in patch) setTelegramChatId(patch.telegram_chat_id ?? "");
+    setPreferenceStatus("");
     try {
-      await api("/users/me/preferences", {
+      const updated = await api("/users/me/preferences", {
         method: "PATCH",
-        body: JSON.stringify({ email_notifications_enabled: enabled })
+        body: JSON.stringify(patch)
       });
+      setEmailNotificationsEnabled(updated.email_notifications_enabled ?? true);
+      setTelegramNotificationsEnabled(updated.telegram_notifications_enabled ?? false);
+      setTelegramChatId(updated.telegram_chat_id ?? "");
+      setPreferenceStatus(t("settingsSaved"));
     } catch (err) {
-      setEmailNotificationsEnabled(previous);
+      setEmailNotificationsEnabled(previous.emailNotificationsEnabled);
+      setTelegramNotificationsEnabled(previous.telegramNotificationsEnabled);
+      setTelegramChatId(previous.telegramChatId);
+      setPreferenceStatus(previous.preferenceStatus);
       setError(err.message);
+    }
+  }
+
+  async function sendTestTelegram() {
+    setTelegramTesting(true);
+    setError("");
+    setPreferenceStatus("");
+    try {
+      if ((telegramChatId || "").trim() !== (user.telegram_chat_id || "")) {
+        await updateNotificationPreferences({ telegram_chat_id: telegramChatId });
+      }
+      const result = await api("/notifications/test-telegram", { method: "POST" });
+      setPreferenceStatus(result.telegram_status === "sent" ? t("telegramTestSent") : `${t("telegramStatus")}: ${result.telegram_status}`);
+      await load(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTelegramTesting(false);
     }
   }
 
@@ -666,6 +707,41 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
                   <span>{emailNotificationsEnabled ? t("enabled") : t("disabled")}</span>
                 </label>
               </section>
+              <section className="card preference-card channel-card">
+                <div>
+                  <Send />
+                  <div>
+                    <h3>{t("telegramNotifications")}</h3>
+                    <p>{t("telegramNotificationsHint")}</p>
+                  </div>
+                </div>
+                <div className="preference-controls">
+                  <label className="switch-row">
+                    <input
+                      type="checkbox"
+                      checked={telegramNotificationsEnabled}
+                      onChange={(event) => updateNotificationPreferences({ telegram_notifications_enabled: event.target.checked })}
+                    />
+                    <span>{telegramNotificationsEnabled ? t("enabled") : t("disabled")}</span>
+                  </label>
+                  <div className="preference-form">
+                    <input
+                      placeholder={t("telegramChatIdPlaceholder")}
+                      value={telegramChatId}
+                      onChange={(event) => setTelegramChatId(event.target.value)}
+                      aria-label={t("telegramChatId")}
+                    />
+                    <button type="button" onClick={() => updateNotificationPreferences({ telegram_chat_id: telegramChatId })}>
+                      {t("save")}
+                    </button>
+                    <button type="button" onClick={sendTestTelegram} disabled={telegramTesting || !telegramChatId.trim()}>
+                      {telegramTesting ? <Spinner text={t("sending")} /> : t("testTelegram")}
+                    </button>
+                  </div>
+                  <small>{t("telegramSetupHint")}</small>
+                </div>
+              </section>
+              {preferenceStatus && <div className="preference-status">{preferenceStatus}</div>}
               <div className="section-actions"><button onClick={readAll}><CheckCheck />{t("readAll")}</button></div>
               <div className="timeline">{notifications.length === 0 && <div className="card empty">{t("noNotifications")}</div>}
                 {notifications.map((n) => <article className={`card timeline-item ${n.is_read ? "" : "unread"}`} key={n.id} onClick={() => openNotification(n)}>

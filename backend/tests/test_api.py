@@ -338,6 +338,28 @@ async def test_user_can_update_email_notification_preference(client: httpx.Async
 
 
 @pytest.mark.anyio
+async def test_user_can_update_telegram_notification_preferences(client: httpx.AsyncClient) -> None:
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    headers = await auth_headers(client, "client@example.com", "password123")
+
+    response = await client.patch(
+        "/api/v1/users/me/preferences",
+        headers=headers,
+        json={"telegram_notifications_enabled": True, "telegram_chat_id": "123456789"},
+    )
+    assert response.status_code == 200
+    assert response.json()["telegram_notifications_enabled"] is True
+    assert response.json()["telegram_chat_id"] == "123456789"
+
+    me = await client.get("/api/v1/auth/me", headers=headers)
+    assert me.json()["telegram_notifications_enabled"] is True
+    assert me.json()["telegram_chat_id"] == "123456789"
+
+
+@pytest.mark.anyio
 async def test_user_can_request_test_email_status(client: httpx.AsyncClient) -> None:
     await client.post(
         "/api/v1/auth/register",
@@ -348,6 +370,19 @@ async def test_user_can_request_test_email_status(client: httpx.AsyncClient) -> 
     response = await client.post("/api/v1/notifications/test-email", headers=headers)
     assert response.status_code == 200
     assert response.json()["email_status"] == "disabled_by_settings"
+
+
+@pytest.mark.anyio
+async def test_user_can_request_test_telegram_status(client: httpx.AsyncClient) -> None:
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    headers = await auth_headers(client, "client@example.com", "password123")
+
+    response = await client.post("/api/v1/notifications/test-telegram", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["telegram_status"] == "disabled_by_settings"
 
 
 @pytest.mark.anyio

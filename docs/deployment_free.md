@@ -93,6 +93,23 @@ Resend принимает отправку через `POST /emails` и треб
 `subject` и контент письма. Для отправки писем любым пользователям нужно
 использовать подтверждённый отправитель или домен.
 
+Для учебной демонстрации без собственного домена удобнее использовать Mailtrap Sandbox. В этом режиме письма формируются backend-ом и отправляются в тестовый inbox Mailtrap через HTTPS API:
+
+```env
+EMAIL_DELIVERY_ENABLED=true
+EMAIL_PROVIDER=mailtrap
+MAILTRAP_API_TOKEN=<mailtrap-api-token>
+MAILTRAP_INBOX_ID=<mailtrap-inbox-id>
+MAILTRAP_FROM=HelpDesk <mailtrap@example.com>
+```
+
+Telegram-уведомления включаются отдельно. Пользователь должен написать боту `/start`, узнать свой `chat_id`, указать его в разделе «Уведомления» и включить Telegram-канал:
+
+```env
+TELEGRAM_NOTIFICATIONS_ENABLED=true
+TELEGRAM_BOT_TOKEN=<telegram-bot-token>
+```
+
 ## 3. PostgreSQL
 
 Для бесплатной демонстрации удобно использовать внешний PostgreSQL-сервис.

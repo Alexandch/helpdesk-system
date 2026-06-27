@@ -85,6 +85,22 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-120}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
+      EMAIL_DELIVERY_ENABLED: ${EMAIL_DELIVERY_ENABLED:-false}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@example.com}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-HelpDesk <onboarding@resend.dev>}
+      MAILTRAP_API_TOKEN: ${MAILTRAP_API_TOKEN:-}
+      MAILTRAP_INBOX_ID: ${MAILTRAP_INBOX_ID:-}
+      MAILTRAP_FROM: ${MAILTRAP_FROM:-HelpDesk <mailtrap@example.com>}
+      MAILTRAP_API_BASE_URL: ${MAILTRAP_API_BASE_URL:-https://sandbox.api.mailtrap.io/api/send}
+      TELEGRAM_NOTIFICATIONS_ENABLED: ${TELEGRAM_NOTIFICATIONS_ENABLED:-false}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -105,6 +121,20 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       NOTIFICATION_TOPIC: ticket-events
       DATABASE_URL: postgresql+psycopg2://helpdesk:helpdesk@postgres:5432/helpdesk
+      EMAIL_DELIVERY_ENABLED: ${EMAIL_DELIVERY_ENABLED:-false}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@example.com}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      MAILTRAP_API_TOKEN: ${MAILTRAP_API_TOKEN:-}
+      MAILTRAP_INBOX_ID: ${MAILTRAP_INBOX_ID:-}
+      MAILTRAP_FROM: ${MAILTRAP_FROM:-HelpDesk <mailtrap@example.com>}
+      MAILTRAP_API_BASE_URL: ${MAILTRAP_API_BASE_URL:-https://sandbox.api.mailtrap.io/api/send}
+      TELEGRAM_NOTIFICATIONS_ENABLED: ${TELEGRAM_NOTIFICATIONS_ENABLED:-false}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     depends_on:
       kafka:
         condition: service_healthy

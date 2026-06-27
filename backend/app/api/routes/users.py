@@ -52,7 +52,14 @@ def update_preferences(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> User:
-    current_user.email_notifications_enabled = payload.email_notifications_enabled
+    values = payload.model_dump(exclude_unset=True)
+    if "email_notifications_enabled" in values:
+        current_user.email_notifications_enabled = values["email_notifications_enabled"]
+    if "telegram_notifications_enabled" in values:
+        current_user.telegram_notifications_enabled = values["telegram_notifications_enabled"]
+    if "telegram_chat_id" in values:
+        chat_id = values["telegram_chat_id"]
+        current_user.telegram_chat_id = chat_id.strip() if chat_id and chat_id.strip() else None
     db.add(current_user)
     db.commit()
     db.refresh(current_user)

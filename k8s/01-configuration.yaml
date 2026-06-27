@@ -10,6 +10,11 @@ data:
   KAFKA_ENABLED: "true"
   NOTIFICATION_TOPIC: ticket-events
   AUDIT_TOPIC: audit-events
+  EMAIL_DELIVERY_ENABLED: "false"
+  EMAIL_PROVIDER: mailtrap
+  MAILTRAP_FROM: "HelpDesk <mailtrap@example.com>"
+  MAILTRAP_API_BASE_URL: https://sandbox.api.mailtrap.io/api/send
+  TELEGRAM_NOTIFICATIONS_ENABLED: "false"
   JWT_ALGORITHM: HS256
   ACCESS_TOKEN_EXPIRE_MINUTES: "120"
   ADMIN_EMAIL: admin@example.com
@@ -29,3 +34,6 @@ stringData:
   DATABASE_URL: postgresql+psycopg2://helpdesk:helpdesk@postgres:5432/helpdesk
   JWT_SECRET_KEY: change-me-before-production
   ADMIN_PASSWORD: admin12345
+  MAILTRAP_API_TOKEN: ""
+  MAILTRAP_INBOX_ID: ""
+  TELEGRAM_BOT_TOKEN: ""

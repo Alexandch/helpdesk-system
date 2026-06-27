@@ -18,6 +18,8 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     email_notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    telegram_notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    telegram_chat_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     created_tickets = relationship("Ticket", foreign_keys="Ticket.creator_id", back_populates="creator")

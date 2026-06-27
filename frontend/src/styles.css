@@ -537,6 +537,37 @@ td { color: #4f5e76; font-size: 13px; }
 .preference-card p { color: #69768d; font-size: 13px; line-height: 1.45; margin: 0; }
 .switch-row { align-items: center; color: #46546d; cursor: pointer; display: flex; flex: 0 0 auto; font-size: 13px; font-weight: 750; gap: 9px; }
 .switch-row input { accent-color: #356df3; height: 18px; width: 18px; }
+.channel-card { align-items: flex-start; }
+.preference-controls {
+  align-items: flex-end;
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+  min-width: min(100%, 520px);
+}
+.preference-form {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(190px, 1fr) auto auto;
+  width: 100%;
+}
+.preference-form button { white-space: nowrap; }
+.preference-controls small {
+  color: #7a869b;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: right;
+}
+.preference-status {
+  background: #e3f8ed;
+  border: 1px solid #bceccf;
+  border-radius: 12px;
+  color: #176a42;
+  font-size: 13px;
+  font-weight: 700;
+  margin: -3px 0 14px;
+  padding: 11px 13px;
+}
 
 .auth-page {
   align-items: center;
@@ -766,6 +797,9 @@ td { color: #4f5e76; font-size: 13px; }
   .timeline-item, .conversation-item { align-items: flex-start; grid-template-columns: 42px 1fr; }
   .timeline-item time, .conversation-side { grid-column: 2; }
   .preference-card { align-items: flex-start; flex-direction: column; }
+  .preference-controls { align-items: stretch; justify-items: stretch; width: 100%; }
+  .preference-form { grid-template-columns: 1fr; }
+  .preference-controls small { text-align: left; }
   .modal-backdrop { align-items: flex-end; padding: 0; }
   .ticket-modal { border-bottom-left-radius: 0; border-bottom-right-radius: 0; max-height: 94vh; }
   .modal-header { padding: 17px 15px; }

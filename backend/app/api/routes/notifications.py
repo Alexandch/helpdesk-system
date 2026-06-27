@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.models.system import Notification
 from app.models.user import User
 from app.schemas.system import NotificationCount, NotificationRead
-from app.services.event_fallback import send_email_notification
+from app.services.event_fallback import send_email_notification, send_telegram_notification
 
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
@@ -69,6 +69,38 @@ def send_test_email(
             },
         ) from exc
     return {"notification_id": notification.id, "email_status": email_status}
+
+
+@router.post("/test-telegram")
+def send_test_telegram(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    title = "Тестовое уведомление HelpDesk"
+    body = "Если вы получили это сообщение, Telegram-уведомления HelpDesk настроены корректно."
+    notification = Notification(
+        user_id=current_user.id,
+        event_type="telegram.test",
+        title=title,
+        body=body,
+        entity_id=None,
+        is_read=False,
+    )
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)
+    try:
+        telegram_status = send_telegram_notification(current_user, title, body)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Telegram delivery failed",
+                "error_type": exc.__class__.__name__,
+                "error": str(exc),
+            },
+        ) from exc
+    return {"notification_id": notification.id, "telegram_status": telegram_status}
 
 
 @router.patch("/{notification_id}/read", response_model=NotificationRead)

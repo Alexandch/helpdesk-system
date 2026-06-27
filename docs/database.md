@@ -18,6 +18,9 @@ erDiagram
         varchar hashed_password
         enum role
         boolean is_active
+        boolean email_notifications_enabled
+        boolean telegram_notifications_enabled
+        varchar telegram_chat_id
         timestamptz created_at
     }
 
@@ -73,6 +76,9 @@ erDiagram
 - `hashed_password` — хэш пароля;
 - `role` — роль `SUPER_ADMIN`, `AGENT` или `USER`;
 - `is_active` — признак активности;
+- `email_notifications_enabled` — согласие на получение email-уведомлений;
+- `telegram_notifications_enabled` — согласие на получение Telegram-уведомлений;
+- `telegram_chat_id` — идентификатор чата Telegram для отправки сообщений ботом;
 - `created_at` — дата создания.
 
 ## Таблица `tickets`

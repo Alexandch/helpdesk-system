@@ -100,6 +100,50 @@ def send_email_via_resend(user: User, title: str, body: str) -> str:
         raise RuntimeError(f"Resend API error {exc.code}: {details}") from exc
 
 
+def mailtrap_address(value: str) -> dict[str, str]:
+    if "<" in value and ">" in value:
+        name = value.split("<", 1)[0].strip().strip('"')
+        email = value.split("<", 1)[1].split(">", 1)[0].strip()
+        result = {"email": email}
+        if name:
+            result["name"] = name
+        return result
+    return {"email": value.strip()}
+
+
+def send_email_via_mailtrap(user: User, title: str, body: str) -> str:
+    if not settings.mailtrap_api_token or not settings.mailtrap_inbox_id:
+        logger.warning("Email delivery is enabled, but Mailtrap credentials are not configured")
+        return "mailtrap_not_configured"
+
+    payload = json.dumps(
+        {
+            "from": mailtrap_address(settings.mailtrap_from),
+            "to": [{"email": user.email, "name": user.full_name}],
+            "subject": title,
+            "text": body,
+            "category": "HelpDesk notifications",
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        f"{settings.mailtrap_api_base_url.rstrip('/')}/{settings.mailtrap_inbox_id}",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {settings.mailtrap_api_token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            if 200 <= response.status < 300:
+                return "sent"
+            return f"mailtrap_http_{response.status}"
+    except urllib.error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Mailtrap API error {exc.code}: {details}") from exc
+
+
 def send_email_notification(user: User, title: str, body: str) -> str:
     if not settings.email_delivery_enabled:
         logger.info("Email notification skipped by settings: user=%s title=%s", user.email, title)
@@ -111,6 +155,8 @@ def send_email_notification(user: User, title: str, body: str) -> str:
     provider = settings.email_provider.lower()
     if provider == "resend":
         status = send_email_via_resend(user, title, body)
+    elif provider == "mailtrap":
+        status = send_email_via_mailtrap(user, title, body)
     elif provider == "smtp":
         status = send_email_via_smtp(user, title, body)
     else:
@@ -118,6 +164,38 @@ def send_email_notification(user: User, title: str, body: str) -> str:
         return "unknown_email_provider"
     logger.info("Email notification sent: user=%s title=%s", user.email, title)
     return status
+
+
+def send_telegram_notification(user: User, title: str, body: str) -> str:
+    if not settings.telegram_notifications_enabled:
+        logger.info("Telegram notification skipped by settings: user=%s title=%s", user.email, title)
+        return "disabled_by_settings"
+    if not settings.telegram_bot_token:
+        logger.warning("Telegram notifications are enabled, but TELEGRAM_BOT_TOKEN is not configured")
+        return "telegram_not_configured"
+    if not user.telegram_notifications_enabled:
+        logger.info("Telegram notification skipped by user preference: user=%s", user.email)
+        return "disabled_by_user"
+    if not user.telegram_chat_id:
+        logger.info("Telegram notification skipped: chat_id is empty for user=%s", user.email)
+        return "telegram_chat_not_configured"
+
+    text = f"{title}\n\n{body}"[:4096]
+    payload = json.dumps({"chat_id": user.telegram_chat_id, "text": text}).encode("utf-8")
+    request = urllib.request.Request(
+        f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            if 200 <= response.status < 300:
+                return "sent"
+            return f"telegram_http_{response.status}"
+    except urllib.error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Telegram API error {exc.code}: {details}") from exc
 
 
 def save_notification_event(event_type: str, payload: dict) -> None:
@@ -151,6 +229,11 @@ def save_notification_event(event_type: str, payload: dict) -> None:
                 logger.info("Email notification status: user=%s status=%s", user.email, status)
             except Exception:
                 logger.exception("Email notification failed: user=%s", user.email)
+            try:
+                status = send_telegram_notification(user, title, body)
+                logger.info("Telegram notification status: user=%s status=%s", user.email, status)
+            except Exception:
+                logger.exception("Telegram notification failed: user=%s", user.email)
         logger.info("Fallback notifications saved: type=%s recipients=%s", event_type, recipient_ids)
     finally:
         db.close()

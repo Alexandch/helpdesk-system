@@ -12,6 +12,8 @@ class UserRead(BaseModel):
     role: UserRole
     is_active: bool
     email_notifications_enabled: bool = True
+    telegram_notifications_enabled: bool = False
+    telegram_chat_id: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -24,4 +26,6 @@ class UserUpdate(BaseModel):
 
 
 class UserPreferencesUpdate(BaseModel):
-    email_notifications_enabled: bool
+    email_notifications_enabled: bool | None = None
+    telegram_notifications_enabled: bool | None = None
+    telegram_chat_id: str | None = None
