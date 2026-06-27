@@ -31,6 +31,7 @@ class Settings(BaseSettings):
 
     telegram_notifications_enabled: bool = False
     telegram_bot_token: str | None = None
+    telegram_webhook_secret: str | None = None
 
     jwt_secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"

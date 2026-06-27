@@ -101,6 +101,7 @@ services:
       MAILTRAP_API_BASE_URL: ${MAILTRAP_API_BASE_URL:-https://sandbox.api.mailtrap.io/api/send}
       TELEGRAM_NOTIFICATIONS_ENABLED: ${TELEGRAM_NOTIFICATIONS_ENABLED:-false}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy

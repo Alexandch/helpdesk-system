@@ -394,6 +394,71 @@ async def test_user_can_connect_telegram_without_manual_chat_id(client: httpx.As
 
 
 @pytest.mark.anyio
+async def test_telegram_webhook_lists_linked_user_tickets(client: httpx.AsyncClient, monkeypatch) -> None:
+    sent_messages: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        "app.services.telegram_bot.send_bot_message",
+        lambda chat_id, text: sent_messages.append((chat_id, text)),
+    )
+
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    headers = await auth_headers(client, "client@example.com", "password123")
+    await client.patch(
+        "/api/v1/users/me/preferences",
+        headers=headers,
+        json={"telegram_notifications_enabled": True, "telegram_chat_id": "123456789"},
+    )
+    ticket = await client.post(
+        "/api/v1/tickets",
+        headers=headers,
+        json={"title": "Telegram bot ticket", "description": "Created before bot command", "priority": "HIGH"},
+    )
+    assert ticket.status_code == 201
+
+    response = await client.post(
+        "/api/v1/telegram/webhook",
+        json={"message": {"chat": {"id": 123456789}, "text": "/tickets"}},
+    )
+    assert response.status_code == 200
+    assert sent_messages
+    assert sent_messages[-1][0] == "123456789"
+    assert "Telegram bot ticket" in sent_messages[-1][1]
+
+
+@pytest.mark.anyio
+async def test_telegram_webhook_can_create_ticket_for_linked_user(client: httpx.AsyncClient, monkeypatch) -> None:
+    sent_messages: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        "app.services.telegram_bot.send_bot_message",
+        lambda chat_id, text: sent_messages.append((chat_id, text)),
+    )
+
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    headers = await auth_headers(client, "client@example.com", "password123")
+    await client.patch(
+        "/api/v1/users/me/preferences",
+        headers=headers,
+        json={"telegram_notifications_enabled": True, "telegram_chat_id": "123456789"},
+    )
+
+    response = await client.post(
+        "/api/v1/telegram/webhook",
+        json={"message": {"chat": {"id": 123456789}, "text": "/new VPN не подключается | При подключении появляется ошибка авторизации | HIGH"}},
+    )
+    assert response.status_code == 200
+    assert "Обращение создано" in sent_messages[-1][1]
+
+    tickets = await client.get("/api/v1/tickets", headers=headers)
+    assert any(item["title"] == "VPN не подключается" for item in tickets.json())
+
+
+@pytest.mark.anyio
 async def test_user_can_request_test_email_status(client: httpx.AsyncClient) -> None:
     await client.post(
         "/api/v1/auth/register",
