@@ -224,7 +224,7 @@ function NotificationDialog({ notification, isAdmin, onClose, onOpenTicket, t })
     <div className="modal-backdrop" onMouseDown={onClose}>
       <section className="notification-modal card animate-modal" onMouseDown={(event) => event.stopPropagation()}>
         <button className="close-button floating-close" onClick={onClose}><X /></button>
-        <div className="notification-icon"><Bell /></div>
+        <div className="notification-icon"><FileClock /></div>
         <small>{new Date(notification.created_at).toLocaleString(languageCode(t))}</small>
         <h2>{notificationTitle(notification, t)}</h2>
         <p>{localizeNotificationText(notification.body, t)}</p>
@@ -778,7 +778,7 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
               <div className="section-actions"><button onClick={readAll}><CheckCheck />{t("readAll")}</button></div>
               <div className="timeline">{notifications.length === 0 && <div className="card empty">{t("noNotifications")}</div>}
                 {notifications.map((n) => <article className={`card timeline-item ${n.is_read ? "" : "unread"}`} key={n.id} onClick={() => openNotification(n)}>
-                  <div className="notification-dot"><Bell /></div><div><h3>{notificationTitle(n, t)}</h3><p>{localizeNotificationText(n.body, t)}</p></div><time>{new Date(n.created_at).toLocaleString(languageCode(t))}</time>
+                  <div className="notification-dot"><FileClock /></div><div><h3>{notificationTitle(n, t)}</h3><p>{localizeNotificationText(n.body, t)}</p></div><time>{new Date(n.created_at).toLocaleString(languageCode(t))}</time>
                 </article>)}
               </div>
             </div>}
