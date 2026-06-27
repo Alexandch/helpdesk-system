@@ -655,7 +655,6 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
         <div className="content">
           <header className="top animate-in">
             <div><h1>{t(titles[section][0])}</h1><p>{t(titles[section][1])}</p></div>
-            <button className="icon-button" onClick={() => setSection("notifications")}><Bell />{unread > 0 && <span className="floating-counter">{unread}</span>}</button>
           </header>
           {error && <div className="error animate-in">{error}<button onClick={() => load()}>{t("retry")}</button></div>}
 

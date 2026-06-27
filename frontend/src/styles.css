@@ -219,8 +219,6 @@ button svg { flex: 0 0 auto; height: 18px; width: 18px; }
 }
 .top h1 { font-size: clamp(27px, 3vw, 37px); letter-spacing: -.8px; margin: 0 0 6px; }
 .top p { color: #69768e; margin: 0; }
-.icon-button { background: white; border: 1px solid #e0e7f1; color: #273653; padding: 11px; position: relative; }
-.floating-counter { background: #ee5470; border: 2px solid white; border-radius: 999px; font-size: 10px; min-width: 19px; padding: 2px 5px; position: absolute; right: -7px; top: -7px; }
 
 .stats {
   display: grid;
