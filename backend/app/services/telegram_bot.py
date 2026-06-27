@@ -103,6 +103,31 @@ def send_bot_message(chat_id: str, text: str, reply_markup: dict | None = None) 
     telegram_api_request("sendMessage", payload)
 
 
+def edit_bot_message(chat_id: str, message_id: int, text: str, reply_markup: dict | None = None) -> None:
+    payload = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "text": text[:4096],
+        "disable_web_page_preview": True,
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+    try:
+        telegram_api_request("editMessageText", payload)
+    except RuntimeError as exc:
+        if "message is not modified" not in str(exc).lower():
+            raise
+
+
+def delete_bot_message(chat_id: str, message_id: int | None) -> None:
+    if message_id is None:
+        return
+    try:
+        telegram_api_request("deleteMessage", {"chat_id": chat_id, "message_id": message_id})
+    except RuntimeError:
+        pass
+
+
 def answer_callback(callback_id: str, text: str | None = None) -> None:
     payload = {"callback_query_id": callback_id}
     if text:
@@ -303,10 +328,10 @@ def ticket_details_response(db: Session, user: User, args: str) -> tuple[str, di
     return format_ticket_details(ticket), ticket_actions_keyboard(ticket, user)
 
 
-def begin_new_ticket(db: Session, chat_id: str, user: User) -> tuple[str, dict | None]:
+def begin_new_ticket(db: Session, chat_id: str, user: User, message_id: int | None = None) -> tuple[str, dict | None]:
     if user.role != UserRole.USER:
         return "Создавать обращения через бота могут только пользователи.", main_menu_keyboard(user)
-    set_session(db, chat_id, user, "awaiting_ticket_text")
+    set_session(db, chat_id, user, "awaiting_ticket_text", {"message_id": message_id})
     return "Опишите проблему одним сообщением. Тему отдельно вводить не нужно — я сформирую её из текста.", cancel_keyboard()
 
 
@@ -352,7 +377,8 @@ async def handle_session_message(db: Session, chat_id: str, user: User, text: st
         clear_session(db, chat_id)
         return "Действие отменено. Выберите пункт меню.", main_menu_keyboard(user)
     if session.state == "awaiting_ticket_text":
-        set_session(db, chat_id, user, "awaiting_ticket_priority", {"description": text.strip()})
+        message_id = (session.payload or {}).get("message_id")
+        set_session(db, chat_id, user, "awaiting_ticket_priority", {"description": text.strip(), "message_id": message_id})
         return "Выберите приоритет обращения:", priority_keyboard()
     if session.state == "awaiting_reply":
         return await reply_from_session(db, chat_id, user, text.strip())
@@ -436,6 +462,14 @@ async def handle_callback(db: Session, callback: dict) -> None:
     data = callback.get("data") or ""
     message = callback.get("message") or {}
     chat_id = str((message.get("chat") or {}).get("id") or "")
+    message_id = message.get("message_id")
+
+    def respond(text: str, reply_markup: dict | None = None) -> None:
+        if message_id:
+            edit_bot_message(chat_id, message_id, text, reply_markup)
+        else:
+            send_bot_message(chat_id, text, reply_markup)
+
     if callback_id:
         answer_callback(callback_id)
     if not chat_id:
@@ -443,63 +477,63 @@ async def handle_callback(db: Session, callback: dict) -> None:
 
     user = require_linked_user(db, chat_id)
     if not user:
-        send_bot_message(chat_id, "Сначала подключите Telegram на сайте HelpDesk.")
+        respond("Сначала подключите Telegram на сайте HelpDesk.")
         return
 
     if data == "cancel":
         clear_session(db, chat_id)
-        send_bot_message(chat_id, "Действие отменено.", main_menu_keyboard(user))
+        respond("Действие отменено.", main_menu_keyboard(user))
         return
     if data == "menu:home":
         clear_session(db, chat_id)
-        send_bot_message(chat_id, "Главное меню:", main_menu_keyboard(user))
+        respond("Главное меню:", main_menu_keyboard(user))
         return
     if data == "menu:help":
-        send_bot_message(chat_id, help_text(user), main_menu_keyboard(user))
+        respond(help_text(user), main_menu_keyboard(user))
         return
     if data == "menu:tickets":
         text, markup = tickets_response(db, user)
-        send_bot_message(chat_id, text, markup)
+        respond(text, markup)
         return
     if data == "menu:new":
-        text, markup = begin_new_ticket(db, chat_id, user)
-        send_bot_message(chat_id, text, markup)
+        text, markup = begin_new_ticket(db, chat_id, user, message_id)
+        respond(text, markup)
         return
     if data.startswith("ticket:"):
         text, markup = ticket_details_response(db, user, data.split(":", 1)[1])
-        send_bot_message(chat_id, text, markup)
+        respond(text, markup)
         return
     if data.startswith("reply:"):
         ticket = find_ticket_by_short_id(db, data.split(":", 1)[1], user)
         if not ticket:
-            send_bot_message(chat_id, "Обращение не найдено или нет доступа.", main_menu_keyboard(user))
+            respond("Обращение не найдено или нет доступа.", main_menu_keyboard(user))
             return
-        set_session(db, chat_id, user, "awaiting_reply", {"ticket_id": ticket.id})
-        send_bot_message(chat_id, f"Введите сообщение для обращения #{short_id(ticket.id)}:", cancel_keyboard())
+        set_session(db, chat_id, user, "awaiting_reply", {"ticket_id": ticket.id, "message_id": message_id})
+        respond(f"Введите сообщение для обращения #{short_id(ticket.id)}:", cancel_keyboard())
         return
     if data.startswith("new_priority:"):
         try:
             priority = TicketPriority(data.split(":", 1)[1])
         except ValueError:
-            send_bot_message(chat_id, "Неизвестный приоритет.", priority_keyboard())
+            respond("Неизвестный приоритет.", priority_keyboard())
             return
         text, markup = await create_ticket_from_session(db, chat_id, user, priority)
-        send_bot_message(chat_id, text, markup)
+        respond(text, markup)
         return
     if data.startswith("status:"):
         _, ticket_id, status_value = data.split(":", 2)
         ticket = get_ticket_for_user(db, ticket_id, user)
         if not ticket:
-            send_bot_message(chat_id, "Обращение не найдено или нет доступа.", main_menu_keyboard(user))
+            respond("Обращение не найдено или нет доступа.", main_menu_keyboard(user))
             return
         text, markup = await change_status(db, user, ticket, TicketStatus(status_value))
-        send_bot_message(chat_id, text, markup)
+        respond(text, markup)
         return
 
-    send_bot_message(chat_id, "Неизвестное действие.", main_menu_keyboard(user))
+    respond("Неизвестное действие.", main_menu_keyboard(user))
 
 
-async def handle_text_message(db: Session, chat_id: str, text: str) -> None:
+async def handle_text_message(db: Session, chat_id: str, text: str, message_id: int | None = None) -> None:
     command, args = extract_command(text)
     if command == "/start":
         response, markup = await handle_start(db, chat_id, args)
@@ -511,10 +545,16 @@ async def handle_text_message(db: Session, chat_id: str, text: str) -> None:
         send_bot_message(chat_id, "Сначала подключите Telegram на сайте HelpDesk через раздел «Уведомления».")
         return
 
+    active_session = get_session(db, chat_id)
+    screen_message_id = (active_session.payload or {}).get("message_id") if active_session else None
     session_response = await handle_session_message(db, chat_id, user, text)
     if session_response:
         response, markup = session_response
-        send_bot_message(chat_id, response, markup)
+        if screen_message_id:
+            edit_bot_message(chat_id, int(screen_message_id), response, markup)
+            delete_bot_message(chat_id, message_id)
+        else:
+            send_bot_message(chat_id, response, markup)
         return
 
     handlers = {
@@ -552,4 +592,4 @@ async def handle_telegram_update(db: Session, update: dict) -> None:
     text = (message.get("text") or "").strip()
     if not chat_id or not text:
         return
-    await handle_text_message(db, chat_id, text)
+    await handle_text_message(db, chat_id, text, message.get("message_id"))

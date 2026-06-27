@@ -517,10 +517,20 @@ async def test_telegram_webhook_can_create_ticket_for_linked_user(client: httpx.
 @pytest.mark.anyio
 async def test_telegram_inline_flow_creates_ticket(client: httpx.AsyncClient, monkeypatch) -> None:
     sent_messages: list[tuple[str, str, dict | None]] = []
+    edited_messages: list[tuple[str, int, str, dict | None]] = []
+    deleted_messages: list[tuple[str, int | None]] = []
     answered_callbacks: list[str] = []
     monkeypatch.setattr(
         "app.services.telegram_bot.send_bot_message",
         lambda chat_id, text, reply_markup=None: sent_messages.append((chat_id, text, reply_markup)),
+    )
+    monkeypatch.setattr(
+        "app.services.telegram_bot.edit_bot_message",
+        lambda chat_id, message_id, text, reply_markup=None: edited_messages.append((chat_id, message_id, text, reply_markup)),
+    )
+    monkeypatch.setattr(
+        "app.services.telegram_bot.delete_bot_message",
+        lambda chat_id, message_id: deleted_messages.append((chat_id, message_id)),
     )
     monkeypatch.setattr(
         "app.services.telegram_bot.answer_callback",
@@ -544,20 +554,22 @@ async def test_telegram_inline_flow_creates_ticket(client: httpx.AsyncClient, mo
             "callback_query": {
                 "id": "callback-1",
                 "data": "menu:new",
-                "message": {"chat": {"id": 123456789}},
+                "message": {"message_id": 100, "chat": {"id": 123456789}},
             }
         },
     )
     assert start.status_code == 200
     assert answered_callbacks == ["callback-1"]
-    assert "Опишите проблему" in sent_messages[-1][1]
+    assert "Опишите проблему" in edited_messages[-1][2]
+    assert edited_messages[-1][1] == 100
 
     text = await client.post(
         "/api/v1/telegram/webhook",
-        json={"message": {"chat": {"id": 123456789}, "text": "Не открывается личный кабинет после ввода пароля"}},
+        json={"message": {"message_id": 101, "chat": {"id": 123456789}, "text": "Не открывается личный кабинет после ввода пароля"}},
     )
     assert text.status_code == 200
-    assert "Выберите приоритет" in sent_messages[-1][1]
+    assert "Выберите приоритет" in edited_messages[-1][2]
+    assert deleted_messages[-1] == ("123456789", 101)
 
     priority = await client.post(
         "/api/v1/telegram/webhook",
@@ -565,12 +577,12 @@ async def test_telegram_inline_flow_creates_ticket(client: httpx.AsyncClient, mo
             "callback_query": {
                 "id": "callback-2",
                 "data": "new_priority:HIGH",
-                "message": {"chat": {"id": 123456789}},
+                "message": {"message_id": 100, "chat": {"id": 123456789}},
             }
         },
     )
     assert priority.status_code == 200
-    assert "Обращение создано" in sent_messages[-1][1]
+    assert "Обращение создано" in edited_messages[-1][2]
 
     tickets = await client.get("/api/v1/tickets", headers=headers)
     assert any(item["priority"] == "HIGH" for item in tickets.json())
