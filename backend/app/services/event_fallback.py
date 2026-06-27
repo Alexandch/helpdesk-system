@@ -129,8 +129,10 @@ def send_email_via_mailtrap(user: User, title: str, body: str) -> str:
         f"{settings.mailtrap_api_base_url.rstrip('/')}/{settings.mailtrap_inbox_id}",
         data=payload,
         headers={
+            "Api-Token": settings.mailtrap_api_token,
             "Authorization": f"Bearer {settings.mailtrap_api_token}",
             "Content-Type": "application/json",
+            "User-Agent": "HelpDesk-System/1.0",
         },
         method="POST",
     )

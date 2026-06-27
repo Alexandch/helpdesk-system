@@ -112,8 +112,10 @@ def send_email_via_mailtrap(user: dict, title: str, body: str) -> str:
         f"{MAILTRAP_API_BASE_URL.rstrip('/')}/{MAILTRAP_INBOX_ID}",
         data=payload,
         headers={
+            "Api-Token": MAILTRAP_API_TOKEN,
             "Authorization": f"Bearer {MAILTRAP_API_TOKEN}",
             "Content-Type": "application/json",
+            "User-Agent": "HelpDesk-System/1.0",
         },
         method="POST",
     )
