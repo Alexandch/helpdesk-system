@@ -450,10 +450,10 @@ async def test_user_can_connect_telegram_without_manual_chat_id(client: httpx.As
 
 @pytest.mark.anyio
 async def test_telegram_webhook_lists_linked_user_tickets(client: httpx.AsyncClient, monkeypatch) -> None:
-    sent_messages: list[tuple[str, str]] = []
+    sent_messages: list[tuple[str, str, dict | None]] = []
     monkeypatch.setattr(
         "app.services.telegram_bot.send_bot_message",
-        lambda chat_id, text: sent_messages.append((chat_id, text)),
+        lambda chat_id, text, reply_markup=None: sent_messages.append((chat_id, text, reply_markup)),
     )
 
     await client.post(
@@ -480,7 +480,8 @@ async def test_telegram_webhook_lists_linked_user_tickets(client: httpx.AsyncCli
     assert response.status_code == 200
     assert sent_messages
     assert sent_messages[-1][0] == "123456789"
-    assert "Telegram bot ticket" in sent_messages[-1][1]
+    assert sent_messages[-1][1] == "Выберите обращение:"
+    assert "Telegram bot ticket" in str(sent_messages[-1][2])
 
 
 @pytest.mark.anyio
@@ -488,7 +489,7 @@ async def test_telegram_webhook_can_create_ticket_for_linked_user(client: httpx.
     sent_messages: list[tuple[str, str]] = []
     monkeypatch.setattr(
         "app.services.telegram_bot.send_bot_message",
-        lambda chat_id, text: sent_messages.append((chat_id, text)),
+        lambda chat_id, text, reply_markup=None: sent_messages.append((chat_id, text)),
     )
 
     await client.post(
@@ -511,6 +512,68 @@ async def test_telegram_webhook_can_create_ticket_for_linked_user(client: httpx.
 
     tickets = await client.get("/api/v1/tickets", headers=headers)
     assert any(item["title"] == "VPN не подключается" for item in tickets.json())
+
+
+@pytest.mark.anyio
+async def test_telegram_inline_flow_creates_ticket(client: httpx.AsyncClient, monkeypatch) -> None:
+    sent_messages: list[tuple[str, str, dict | None]] = []
+    answered_callbacks: list[str] = []
+    monkeypatch.setattr(
+        "app.services.telegram_bot.send_bot_message",
+        lambda chat_id, text, reply_markup=None: sent_messages.append((chat_id, text, reply_markup)),
+    )
+    monkeypatch.setattr(
+        "app.services.telegram_bot.answer_callback",
+        lambda callback_id, text=None: answered_callbacks.append(callback_id),
+    )
+
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    headers = await auth_headers(client, "client@example.com", "password123")
+    await client.patch(
+        "/api/v1/users/me/preferences",
+        headers=headers,
+        json={"telegram_notifications_enabled": True, "telegram_chat_id": "123456789"},
+    )
+
+    start = await client.post(
+        "/api/v1/telegram/webhook",
+        json={
+            "callback_query": {
+                "id": "callback-1",
+                "data": "menu:new",
+                "message": {"chat": {"id": 123456789}},
+            }
+        },
+    )
+    assert start.status_code == 200
+    assert answered_callbacks == ["callback-1"]
+    assert "Опишите проблему" in sent_messages[-1][1]
+
+    text = await client.post(
+        "/api/v1/telegram/webhook",
+        json={"message": {"chat": {"id": 123456789}, "text": "Не открывается личный кабинет после ввода пароля"}},
+    )
+    assert text.status_code == 200
+    assert "Выберите приоритет" in sent_messages[-1][1]
+
+    priority = await client.post(
+        "/api/v1/telegram/webhook",
+        json={
+            "callback_query": {
+                "id": "callback-2",
+                "data": "new_priority:HIGH",
+                "message": {"chat": {"id": 123456789}},
+            }
+        },
+    )
+    assert priority.status_code == 200
+    assert "Обращение создано" in sent_messages[-1][1]
+
+    tickets = await client.get("/api/v1/tickets", headers=headers)
+    assert any(item["priority"] == "HIGH" for item in tickets.json())
 
 
 @pytest.mark.anyio
