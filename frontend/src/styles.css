@@ -548,10 +548,23 @@ td { color: #4f5e76; font-size: 13px; }
 .preference-form {
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(190px, 1fr) auto auto;
+  grid-template-columns: repeat(3, minmax(0, auto));
   width: 100%;
 }
 .preference-form button { white-space: nowrap; }
+.telegram-state {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+.telegram-link {
+  color: #356df3;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.telegram-link:hover { text-decoration: underline; }
 .preference-controls small {
   color: #7a869b;
   font-size: 11px;
@@ -799,6 +812,7 @@ td { color: #4f5e76; font-size: 13px; }
   .preference-card { align-items: flex-start; flex-direction: column; }
   .preference-controls { align-items: stretch; justify-items: stretch; width: 100%; }
   .preference-form { grid-template-columns: 1fr; }
+  .telegram-state { align-items: flex-start; flex-direction: column; justify-content: flex-start; }
   .preference-controls small { text-align: left; }
   .modal-backdrop { align-items: flex-end; padding: 0; }
   .ticket-modal { border-bottom-left-radius: 0; border-bottom-right-radius: 0; max-height: 94vh; }

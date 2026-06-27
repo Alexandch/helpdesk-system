@@ -360,6 +360,40 @@ async def test_user_can_update_telegram_notification_preferences(client: httpx.A
 
 
 @pytest.mark.anyio
+async def test_user_can_connect_telegram_without_manual_chat_id(client: httpx.AsyncClient, monkeypatch) -> None:
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    headers = await auth_headers(client, "client@example.com", "password123")
+
+    monkeypatch.setattr(
+        "app.api.routes.users.build_telegram_link",
+        lambda token: f"https://t.me/helpdesk_demo_bot?start={token}",
+    )
+    response = await client.post("/api/v1/users/me/telegram-link", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["link"].startswith("https://t.me/helpdesk_demo_bot?start=")
+    assert response.json()["token"]
+
+    def fake_bind(db, user):
+        user.telegram_chat_id = "987654321"
+        user.telegram_notifications_enabled = True
+        user.telegram_link_token = None
+        user.telegram_link_expires_at = None
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return True
+
+    monkeypatch.setattr("app.api.routes.users.bind_telegram_if_started", fake_bind)
+    check = await client.post("/api/v1/users/me/telegram-link/check", headers=headers)
+    assert check.status_code == 200
+    assert check.json()["connected"] is True
+    assert check.json()["telegram_chat_id"] == "987654321"
+
+
+@pytest.mark.anyio
 async def test_user_can_request_test_email_status(client: httpx.AsyncClient) -> None:
     await client.post(
         "/api/v1/auth/register",

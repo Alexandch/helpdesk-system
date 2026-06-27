@@ -29,3 +29,17 @@ class UserPreferencesUpdate(BaseModel):
     email_notifications_enabled: bool | None = None
     telegram_notifications_enabled: bool | None = None
     telegram_chat_id: str | None = None
+
+
+class TelegramLinkRead(BaseModel):
+    link: str
+    token: str
+    expires_at: datetime
+    connected: bool = False
+
+
+class TelegramLinkStatus(BaseModel):
+    connected: bool
+    telegram_notifications_enabled: bool = False
+    telegram_chat_id: str | None = None
+    status: str

@@ -6,7 +6,8 @@ from app.api.deps import get_current_user, require_super_admin
 from app.db.session import get_db
 from app.models.enums import UserRole
 from app.models.user import User
-from app.schemas.user import UserPreferencesUpdate, UserRead, UserUpdate
+from app.schemas.user import TelegramLinkRead, TelegramLinkStatus, UserPreferencesUpdate, UserRead, UserUpdate
+from app.services.telegram import bind_telegram_if_started, build_telegram_link, ensure_telegram_link
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -64,3 +65,59 @@ def update_preferences(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.post("/me/telegram-link", response_model=TelegramLinkRead)
+def create_telegram_link(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TelegramLinkRead:
+    try:
+        token, expires_at = ensure_telegram_link(db, current_user)
+        link = build_telegram_link(token)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Telegram link creation failed",
+                "error_type": exc.__class__.__name__,
+                "error": str(exc),
+            },
+        ) from exc
+    return TelegramLinkRead(
+        link=link,
+        token=token,
+        expires_at=expires_at,
+            connected=bool(current_user.telegram_chat_id),
+    )
+
+
+@router.post("/me/telegram-link/check", response_model=TelegramLinkStatus)
+def check_telegram_link(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TelegramLinkStatus:
+    if current_user.telegram_chat_id:
+        return TelegramLinkStatus(
+            connected=True,
+            telegram_notifications_enabled=current_user.telegram_notifications_enabled,
+            telegram_chat_id=current_user.telegram_chat_id,
+            status="already_connected",
+        )
+    try:
+        connected = bind_telegram_if_started(db, current_user)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Telegram link check failed",
+                "error_type": exc.__class__.__name__,
+                "error": str(exc),
+            },
+        ) from exc
+    return TelegramLinkStatus(
+        connected=connected,
+        telegram_notifications_enabled=current_user.telegram_notifications_enabled,
+        telegram_chat_id=current_user.telegram_chat_id,
+        status="connected" if connected else "waiting_for_start",
+    )

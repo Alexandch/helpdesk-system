@@ -42,6 +42,22 @@ def bootstrap_database() -> None:
                     "ADD COLUMN telegram_chat_id VARCHAR(64)"
                 )
             )
+    if "telegram_link_token" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "ALTER TABLE users "
+                    "ADD COLUMN telegram_link_token VARCHAR(96)"
+                )
+            )
+    if "telegram_link_expires_at" not in existing_columns:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "ALTER TABLE users "
+                    "ADD COLUMN telegram_link_expires_at TIMESTAMP"
+                )
+            )
     if engine.dialect.name == "postgresql":
         for value in ("SUPER_ADMIN", "AGENT"):
             with engine.begin() as connection:

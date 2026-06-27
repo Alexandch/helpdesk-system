@@ -20,6 +20,8 @@ class User(Base):
     email_notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     telegram_notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     telegram_chat_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    telegram_link_token: Mapped[str | None] = mapped_column(String(96), nullable=True, index=True)
+    telegram_link_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     created_tickets = relationship("Ticket", foreign_keys="Ticket.creator_id", back_populates="creator")

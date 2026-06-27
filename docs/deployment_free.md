@@ -103,7 +103,7 @@ MAILTRAP_INBOX_ID=<mailtrap-inbox-id>
 MAILTRAP_FROM=HelpDesk <mailtrap@example.com>
 ```
 
-Telegram-уведомления включаются отдельно. Пользователь должен написать боту `/start`, узнать свой `chat_id`, указать его в разделе «Уведомления» и включить Telegram-канал:
+Telegram-уведомления включаются отдельно. Пользователь нажимает в интерфейсе «Подключить Telegram», открывает бота по deep link, нажимает `Start`, после чего backend через Telegram Bot API находит одноразовый токен привязки и сохраняет `chat_id` автоматически:
 
 ```env
 TELEGRAM_NOTIFICATIONS_ENABLED=true

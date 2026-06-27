@@ -21,6 +21,8 @@ erDiagram
         boolean email_notifications_enabled
         boolean telegram_notifications_enabled
         varchar telegram_chat_id
+        varchar telegram_link_token
+        timestamptz telegram_link_expires_at
         timestamptz created_at
     }
 
@@ -79,6 +81,7 @@ erDiagram
 - `email_notifications_enabled` — согласие на получение email-уведомлений;
 - `telegram_notifications_enabled` — согласие на получение Telegram-уведомлений;
 - `telegram_chat_id` — идентификатор чата Telegram для отправки сообщений ботом;
+- `telegram_link_token`, `telegram_link_expires_at` — временные данные для автоматической привязки Telegram без ручного ввода `chat_id`;
 - `created_at` — дата создания.
 
 ## Таблица `tickets`

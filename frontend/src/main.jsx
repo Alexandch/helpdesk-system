@@ -444,7 +444,10 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
   const [creating, setCreating] = useState(false);
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(user.email_notifications_enabled ?? true);
   const [telegramNotificationsEnabled, setTelegramNotificationsEnabled] = useState(user.telegram_notifications_enabled ?? false);
-  const [telegramChatId, setTelegramChatId] = useState(user.telegram_chat_id ?? "");
+  const [telegramConnected, setTelegramConnected] = useState(Boolean(user.telegram_chat_id));
+  const [telegramLink, setTelegramLink] = useState("");
+  const [telegramConnecting, setTelegramConnecting] = useState(false);
+  const [telegramChecking, setTelegramChecking] = useState(false);
   const [telegramTesting, setTelegramTesting] = useState(false);
   const [preferenceStatus, setPreferenceStatus] = useState("");
 
@@ -538,12 +541,11 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
     const previous = {
       emailNotificationsEnabled,
       telegramNotificationsEnabled,
-      telegramChatId,
+      telegramConnected,
       preferenceStatus
     };
     if ("email_notifications_enabled" in patch) setEmailNotificationsEnabled(patch.email_notifications_enabled);
     if ("telegram_notifications_enabled" in patch) setTelegramNotificationsEnabled(patch.telegram_notifications_enabled);
-    if ("telegram_chat_id" in patch) setTelegramChatId(patch.telegram_chat_id ?? "");
     setPreferenceStatus("");
     try {
       const updated = await api("/users/me/preferences", {
@@ -552,14 +554,45 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
       });
       setEmailNotificationsEnabled(updated.email_notifications_enabled ?? true);
       setTelegramNotificationsEnabled(updated.telegram_notifications_enabled ?? false);
-      setTelegramChatId(updated.telegram_chat_id ?? "");
+      setTelegramConnected(Boolean(updated.telegram_chat_id));
       setPreferenceStatus(t("settingsSaved"));
     } catch (err) {
       setEmailNotificationsEnabled(previous.emailNotificationsEnabled);
       setTelegramNotificationsEnabled(previous.telegramNotificationsEnabled);
-      setTelegramChatId(previous.telegramChatId);
+      setTelegramConnected(previous.telegramConnected);
       setPreferenceStatus(previous.preferenceStatus);
       setError(err.message);
+    }
+  }
+
+  async function startTelegramLink() {
+    setTelegramConnecting(true);
+    setError("");
+    setPreferenceStatus("");
+    try {
+      const result = await api("/users/me/telegram-link", { method: "POST" });
+      setTelegramLink(result.link);
+      window.open(result.link, "_blank", "noopener,noreferrer");
+      setPreferenceStatus(t("telegramLinkOpened"));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTelegramConnecting(false);
+    }
+  }
+
+  async function checkTelegramLink() {
+    setTelegramChecking(true);
+    setError("");
+    try {
+      const result = await api("/users/me/telegram-link/check", { method: "POST" });
+      setTelegramNotificationsEnabled(result.telegram_notifications_enabled ?? false);
+      setTelegramConnected(Boolean(result.connected));
+      setPreferenceStatus(result.connected ? t("telegramConnected") : t("telegramWaiting"));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTelegramChecking(false);
     }
   }
 
@@ -568,9 +601,6 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
     setError("");
     setPreferenceStatus("");
     try {
-      if ((telegramChatId || "").trim() !== (user.telegram_chat_id || "")) {
-        await updateNotificationPreferences({ telegram_chat_id: telegramChatId });
-      }
       const result = await api("/notifications/test-telegram", { method: "POST" });
       setPreferenceStatus(result.telegram_status === "sent" ? t("telegramTestSent") : `${t("telegramStatus")}: ${result.telegram_status}`);
       await load(true);
@@ -712,32 +742,37 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
                   <Send />
                   <div>
                     <h3>{t("telegramNotifications")}</h3>
-                    <p>{t("telegramNotificationsHint")}</p>
+                  <p>{t("telegramNotificationsHint")}</p>
                   </div>
                 </div>
                 <div className="preference-controls">
-                  <label className="switch-row">
-                    <input
-                      type="checkbox"
-                      checked={telegramNotificationsEnabled}
-                      onChange={(event) => updateNotificationPreferences({ telegram_notifications_enabled: event.target.checked })}
-                    />
-                    <span>{telegramNotificationsEnabled ? t("enabled") : t("disabled")}</span>
-                  </label>
+                  <div className="telegram-state">
+                    <span className={`account-state ${telegramConnected ? "active" : "blocked"}`}>
+                      {telegramConnected ? t("connected") : t("notConnected")}
+                    </span>
+                    {telegramConnected && (
+                      <label className="switch-row">
+                        <input
+                          type="checkbox"
+                          checked={telegramNotificationsEnabled}
+                          onChange={(event) => updateNotificationPreferences({ telegram_notifications_enabled: event.target.checked })}
+                        />
+                        <span>{telegramNotificationsEnabled ? t("enabled") : t("disabled")}</span>
+                      </label>
+                    )}
+                  </div>
                   <div className="preference-form">
-                    <input
-                      placeholder={t("telegramChatIdPlaceholder")}
-                      value={telegramChatId}
-                      onChange={(event) => setTelegramChatId(event.target.value)}
-                      aria-label={t("telegramChatId")}
-                    />
-                    <button type="button" onClick={() => updateNotificationPreferences({ telegram_chat_id: telegramChatId })}>
-                      {t("save")}
+                    <button type="button" onClick={startTelegramLink} disabled={telegramConnecting}>
+                      {telegramConnecting ? <Spinner text={t("loading")} /> : t("connectTelegram")}
                     </button>
-                    <button type="button" onClick={sendTestTelegram} disabled={telegramTesting || !telegramChatId.trim()}>
+                    <button type="button" onClick={checkTelegramLink} disabled={telegramChecking}>
+                      {telegramChecking ? <Spinner text={t("loading")} /> : t("checkTelegram")}
+                    </button>
+                    <button type="button" onClick={sendTestTelegram} disabled={telegramTesting || !telegramConnected}>
                       {telegramTesting ? <Spinner text={t("sending")} /> : t("testTelegram")}
                     </button>
                   </div>
+                  {telegramLink && <a className="telegram-link" href={telegramLink} target="_blank" rel="noreferrer">{t("openTelegramBot")}</a>}
                   <small>{t("telegramSetupHint")}</small>
                 </div>
               </section>
