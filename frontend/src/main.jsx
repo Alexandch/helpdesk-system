@@ -448,7 +448,6 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
   const [telegramLink, setTelegramLink] = useState("");
   const [telegramConnecting, setTelegramConnecting] = useState(false);
   const [telegramChecking, setTelegramChecking] = useState(false);
-  const [telegramTesting, setTelegramTesting] = useState(false);
   const [preferenceStatus, setPreferenceStatus] = useState("");
 
   async function load(silent = false) {
@@ -607,21 +606,6 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
     setPreferenceStatus(t("telegramDisconnected"));
   }
 
-  async function sendTestTelegram() {
-    setTelegramTesting(true);
-    setError("");
-    setPreferenceStatus("");
-    try {
-      const result = await api("/notifications/test-telegram", { method: "POST" });
-      setPreferenceStatus(result.telegram_status === "sent" ? t("telegramTestSent") : `${t("telegramStatus")}: ${result.telegram_status}`);
-      await load(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setTelegramTesting(false);
-    }
-  }
-
   async function updateUserRole(userId, role) {
     try {
       await api(`/users/${userId}`, { method: "PATCH", body: JSON.stringify({ role }) });
@@ -772,10 +756,12 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
                     )}
                   </div>
                   <div className="preference-form">
-                    <button type="button" onClick={startTelegramLink} disabled={telegramConnecting}>
-                      {telegramConnecting ? <Spinner text={t("loading")} /> : t("connectTelegram")}
-                    </button>
-                    <button type="button" onClick={checkTelegramLink} disabled={telegramChecking}>
+                    {!telegramConnected && (
+                      <button type="button" onClick={startTelegramLink} disabled={telegramConnecting}>
+                        {telegramConnecting ? <Spinner text={t("loading")} /> : t("connectTelegram")}
+                      </button>
+                    )}
+                    <button type="button" className="secondary-action" onClick={checkTelegramLink} disabled={telegramChecking}>
                       {telegramChecking ? <Spinner text={t("loading")} /> : t("checkTelegram")}
                     </button>
                     {telegramConnected && (
@@ -783,9 +769,6 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
                         {t("disconnectTelegram")}
                       </button>
                     )}
-                    <button type="button" onClick={sendTestTelegram} disabled={telegramTesting || !telegramConnected}>
-                      {telegramTesting ? <Spinner text={t("sending")} /> : t("testTelegram")}
-                    </button>
                   </div>
                   {telegramLink && <a className="telegram-link" href={telegramLink} target="_blank" rel="noreferrer">{t("openTelegramBot")}</a>}
                   <small>{t("telegramSetupHint")}</small>

@@ -589,6 +589,21 @@ async def test_telegram_inline_flow_creates_ticket(client: httpx.AsyncClient, mo
 
 
 @pytest.mark.anyio
+async def test_admin_can_configure_telegram_commands(client: httpx.AsyncClient, monkeypatch) -> None:
+    configured = {"called": False}
+    monkeypatch.setattr(
+        "app.api.routes.telegram.setup_bot_commands",
+        lambda: configured.update(called=True),
+    )
+    admin_headers = await auth_headers(client, "admin@example.com", "admin12345")
+
+    response = await client.post("/api/v1/telegram/commands", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+    assert configured["called"] is True
+
+
+@pytest.mark.anyio
 async def test_user_can_request_test_email_status(client: httpx.AsyncClient) -> None:
     await client.post(
         "/api/v1/auth/register",

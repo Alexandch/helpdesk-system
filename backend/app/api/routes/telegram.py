@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.api.deps import require_super_admin
 from app.core.config import settings
 from app.db.session import get_db
-from app.services.telegram_bot import handle_telegram_update
+from app.models.user import User
+from app.services.telegram_bot import handle_telegram_update, setup_bot_commands
 
 
 router = APIRouter(prefix="/telegram", tags=["telegram"])
@@ -20,4 +22,20 @@ async def telegram_webhook(
 
     update = await request.json()
     await handle_telegram_update(db, update)
+    return {"ok": True}
+
+
+@router.post("/commands")
+def configure_telegram_commands(_: User = Depends(require_super_admin)) -> dict:
+    try:
+        setup_bot_commands()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "Telegram command setup failed",
+                "error_type": exc.__class__.__name__,
+                "error": str(exc),
+            },
+        ) from exc
     return {"ok": True}

@@ -261,6 +261,37 @@ def help_text(user: User | None) -> str:
     )
 
 
+def capabilities_text(user: User) -> str:
+    lines = [
+        "HelpDesk-бот помогает работать с обращениями прямо в Telegram.",
+        "",
+        "Что можно делать:",
+        "• смотреть список обращений;",
+        "• открывать детали обращения;",
+        "• отвечать в переписку;",
+    ]
+    if user.role == UserRole.USER:
+        lines.append("• создавать новое обращение в пару шагов;")
+    if user.role == UserRole.AGENT:
+        lines.append("• менять статус назначенных обращений кнопками;")
+    lines.extend(["", "Выберите действие в меню ниже."])
+    return "\n".join(lines)
+
+
+def setup_bot_commands() -> dict:
+    return telegram_api_request(
+        "setMyCommands",
+        {
+            "commands": [
+                {"command": "menu", "description": "Открыть главное меню"},
+                {"command": "tickets", "description": "Показать обращения"},
+                {"command": "new", "description": "Создать обращение"},
+                {"command": "help", "description": "Что умеет бот"},
+            ]
+        },
+    )
+
+
 async def publish_ticket_created(db: Session, user: User, ticket: Ticket) -> None:
     cache_delete(stats_cache_key(user))
     await publish_ticket_event(
@@ -299,14 +330,14 @@ async def handle_start(db: Session, chat_id: str, args: str) -> tuple[str, dict 
         if user:
             clear_session(db, chat_id)
             return (
-                f"Telegram подключён к аккаунту {user.email}.\n\nВыберите действие:",
+                f"Telegram подключён к аккаунту {user.email}.\n\n{capabilities_text(user)}",
                 main_menu_keyboard(user),
             )
         return "Не удалось привязать Telegram: ссылка устарела или токен не найден.", None
 
     user = find_user_by_chat_id(db, chat_id)
     if user:
-        return f"Вы подключены как {user.full_name}. Выберите действие:", main_menu_keyboard(user)
+        return f"Вы подключены как {user.full_name}.\n\n{capabilities_text(user)}", main_menu_keyboard(user)
     return "Здравствуйте! Чтобы подключить бота, откройте сайт HelpDesk и нажмите «Подключить Telegram».", None
 
 

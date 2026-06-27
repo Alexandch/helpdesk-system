@@ -535,21 +535,39 @@ td { color: #4f5e76; font-size: 13px; }
 .preference-card p { color: #69768d; font-size: 13px; line-height: 1.45; margin: 0; }
 .switch-row { align-items: center; color: #46546d; cursor: pointer; display: flex; flex: 0 0 auto; font-size: 13px; font-weight: 750; gap: 9px; }
 .switch-row input { accent-color: #356df3; height: 18px; width: 18px; }
-.channel-card { align-items: flex-start; }
+.channel-card {
+  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(320px, auto);
+}
 .preference-controls {
   align-items: flex-end;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   justify-items: end;
-  min-width: min(100%, 520px);
-}
-.preference-form {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: repeat(3, minmax(0, auto));
+  max-width: 640px;
+  min-width: 0;
   width: 100%;
 }
-.preference-form button { white-space: nowrap; }
+.preference-form {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.preference-form button {
+  min-width: 178px;
+  white-space: nowrap;
+}
+.preference-form .secondary-action {
+  background: #eef3ff;
+  color: #315fcf;
+}
+.preference-form .secondary-action:hover:not(:disabled) {
+  background: #e2eaff;
+  box-shadow: none;
+}
 .preference-form .danger-action {
   background: #fff0f2;
   color: #a42b40;
@@ -816,8 +834,10 @@ td { color: #4f5e76; font-size: 13px; }
   .timeline-item, .conversation-item { align-items: flex-start; grid-template-columns: 42px 1fr; }
   .timeline-item time, .conversation-side { grid-column: 2; }
   .preference-card { align-items: flex-start; flex-direction: column; }
+  .channel-card { display: flex; }
   .preference-controls { align-items: stretch; justify-items: stretch; width: 100%; }
-  .preference-form { grid-template-columns: 1fr; }
+  .preference-form { align-items: stretch; flex-direction: column; justify-content: flex-start; }
+  .preference-form button { min-width: 0; width: 100%; }
   .telegram-state { align-items: flex-start; flex-direction: column; justify-content: flex-start; }
   .preference-controls small { text-align: left; }
   .modal-backdrop { align-items: flex-end; padding: 0; }

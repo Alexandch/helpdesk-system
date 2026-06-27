@@ -126,6 +126,14 @@ https://api.telegram.org/bot<telegram-bot-token>/setWebhook?url=https://helpdesk
 - `/reply ID текст` — сообщение в переписку по обращению;
 - `/status ID RESOLVED` — смена статуса исполнителем; в карточке обращения также доступны кнопки допустимых статусов.
 
+Чтобы команды появлялись в подсказке Telegram при вводе `/`, после деплоя можно один раз вызвать под супер-администратором:
+
+```text
+POST /api/v1/telegram/commands
+```
+
+Endpoint вызывает Telegram Bot API `setMyCommands` и регистрирует команды `/menu`, `/tickets`, `/new`, `/help`.
+
 ## 3. PostgreSQL
 
 Для бесплатной демонстрации удобно использовать внешний PostgreSQL-сервис.
