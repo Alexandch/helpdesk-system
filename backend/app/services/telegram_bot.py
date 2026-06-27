@@ -9,7 +9,7 @@ from app.models.user import User
 from app.schemas.ticket import TicketCreate, TicketUpdate
 from app.services.cache import cache_delete
 from app.services.events import publish_ticket_event
-from app.services.telegram import telegram_api_request
+from app.services.telegram import clear_telegram_chat_from_other_users, telegram_api_request
 from app.services.tickets import (
     add_message,
     create_ticket,
@@ -78,6 +78,7 @@ def bind_user_by_token(db: Session, token: str, chat_id: str) -> User | None:
     user = db.scalar(select(User).where(User.telegram_link_token == token, User.is_active.is_(True)))
     if not user:
         return None
+    clear_telegram_chat_from_other_users(db, chat_id, user)
     user.telegram_chat_id = chat_id
     user.telegram_notifications_enabled = True
     user.telegram_link_token = None

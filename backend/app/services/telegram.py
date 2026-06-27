@@ -5,6 +5,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -97,6 +98,21 @@ def find_chat_id_by_token(token: str) -> str | None:
     return None
 
 
+def clear_telegram_chat_from_other_users(db: Session, chat_id: str, current_user: User) -> None:
+    other_users = db.scalars(
+        select(User).where(
+            User.telegram_chat_id == chat_id,
+            User.id != current_user.id,
+        )
+    )
+    for other_user in other_users:
+        other_user.telegram_chat_id = None
+        other_user.telegram_notifications_enabled = False
+        other_user.telegram_link_token = None
+        other_user.telegram_link_expires_at = None
+        db.add(other_user)
+
+
 def bind_telegram_if_started(db: Session, user: User) -> bool:
     if not user.telegram_link_token:
         return False
@@ -111,6 +127,7 @@ def bind_telegram_if_started(db: Session, user: User) -> bool:
     if not chat_id:
         return False
 
+    clear_telegram_chat_from_other_users(db, chat_id, user)
     user.telegram_chat_id = chat_id
     user.telegram_notifications_enabled = True
     user.telegram_link_token = None

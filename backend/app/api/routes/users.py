@@ -7,7 +7,12 @@ from app.db.session import get_db
 from app.models.enums import UserRole
 from app.models.user import User
 from app.schemas.user import TelegramLinkRead, TelegramLinkStatus, UserPreferencesUpdate, UserRead, UserUpdate
-from app.services.telegram import bind_telegram_if_started, build_telegram_link, ensure_telegram_link
+from app.services.telegram import (
+    bind_telegram_if_started,
+    build_telegram_link,
+    clear_telegram_chat_from_other_users,
+    ensure_telegram_link,
+)
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -60,7 +65,14 @@ def update_preferences(
         current_user.telegram_notifications_enabled = values["telegram_notifications_enabled"]
     if "telegram_chat_id" in values:
         chat_id = values["telegram_chat_id"]
-        current_user.telegram_chat_id = chat_id.strip() if chat_id and chat_id.strip() else None
+        normalized_chat_id = chat_id.strip() if chat_id and chat_id.strip() else None
+        if normalized_chat_id:
+            clear_telegram_chat_from_other_users(db, normalized_chat_id, current_user)
+        else:
+            current_user.telegram_notifications_enabled = False
+            current_user.telegram_link_token = None
+            current_user.telegram_link_expires_at = None
+        current_user.telegram_chat_id = normalized_chat_id
     db.add(current_user)
     db.commit()
     db.refresh(current_user)

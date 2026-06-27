@@ -596,6 +596,17 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
     }
   }
 
+  async function disconnectTelegram() {
+    setError("");
+    setTelegramLink("");
+    await updateNotificationPreferences({
+      telegram_notifications_enabled: false,
+      telegram_chat_id: null
+    });
+    setTelegramConnected(false);
+    setPreferenceStatus(t("telegramDisconnected"));
+  }
+
   async function sendTestTelegram() {
     setTelegramTesting(true);
     setError("");
@@ -767,6 +778,11 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
                     <button type="button" onClick={checkTelegramLink} disabled={telegramChecking}>
                       {telegramChecking ? <Spinner text={t("loading")} /> : t("checkTelegram")}
                     </button>
+                    {telegramConnected && (
+                      <button type="button" className="danger-action" onClick={disconnectTelegram}>
+                        {t("disconnectTelegram")}
+                      </button>
+                    )}
                     <button type="button" onClick={sendTestTelegram} disabled={telegramTesting || !telegramConnected}>
                       {telegramTesting ? <Spinner text={t("sending")} /> : t("testTelegram")}
                     </button>

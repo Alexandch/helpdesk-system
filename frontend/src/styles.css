@@ -550,6 +550,14 @@ td { color: #4f5e76; font-size: 13px; }
   width: 100%;
 }
 .preference-form button { white-space: nowrap; }
+.preference-form .danger-action {
+  background: #fff0f2;
+  color: #a42b40;
+}
+.preference-form .danger-action:hover:not(:disabled) {
+  background: #ffe1e6;
+  box-shadow: none;
+}
 .telegram-state {
   align-items: center;
   display: flex;

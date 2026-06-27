@@ -360,6 +360,61 @@ async def test_user_can_update_telegram_notification_preferences(client: httpx.A
 
 
 @pytest.mark.anyio
+async def test_telegram_chat_id_is_moved_from_previous_user(client: httpx.AsyncClient) -> None:
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "first@example.com", "full_name": "First", "password": "password123"},
+    )
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "second@example.com", "full_name": "Second", "password": "password123"},
+    )
+    first_headers = await auth_headers(client, "first@example.com", "password123")
+    second_headers = await auth_headers(client, "second@example.com", "password123")
+
+    first = await client.patch(
+        "/api/v1/users/me/preferences",
+        headers=first_headers,
+        json={"telegram_notifications_enabled": True, "telegram_chat_id": "123456789"},
+    )
+    assert first.json()["telegram_chat_id"] == "123456789"
+
+    second = await client.patch(
+        "/api/v1/users/me/preferences",
+        headers=second_headers,
+        json={"telegram_notifications_enabled": True, "telegram_chat_id": "123456789"},
+    )
+    assert second.json()["telegram_chat_id"] == "123456789"
+
+    first_me = await client.get("/api/v1/auth/me", headers=first_headers)
+    assert first_me.json()["telegram_chat_id"] is None
+    assert first_me.json()["telegram_notifications_enabled"] is False
+
+
+@pytest.mark.anyio
+async def test_user_can_disconnect_telegram(client: httpx.AsyncClient) -> None:
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "client@example.com", "full_name": "Client", "password": "password123"},
+    )
+    headers = await auth_headers(client, "client@example.com", "password123")
+    await client.patch(
+        "/api/v1/users/me/preferences",
+        headers=headers,
+        json={"telegram_notifications_enabled": True, "telegram_chat_id": "123456789"},
+    )
+
+    response = await client.patch(
+        "/api/v1/users/me/preferences",
+        headers=headers,
+        json={"telegram_notifications_enabled": False, "telegram_chat_id": None},
+    )
+    assert response.status_code == 200
+    assert response.json()["telegram_chat_id"] is None
+    assert response.json()["telegram_notifications_enabled"] is False
+
+
+@pytest.mark.anyio
 async def test_user_can_connect_telegram_without_manual_chat_id(client: httpx.AsyncClient, monkeypatch) -> None:
     await client.post(
         "/api/v1/auth/register",
