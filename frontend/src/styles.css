@@ -423,8 +423,9 @@ td { color: #4f5e76; font-size: 13px; }
 
 .recent-list, .activity-list { display: grid; }
 .recent-list > div, .activity-list > div { align-items: center; border-top: 1px solid #edf0f5; display: grid; gap: 11px; min-height: 61px; padding: 10px 0; }
-.recent-list > div { grid-template-columns: 5px 1fr auto; }
+.recent-list > div { grid-template-columns: 5px minmax(0, 1fr) max-content; overflow: hidden; }
 .recent-list > div:first-child, .activity-list > div:first-child { border-top: 0; }
+.recent-list > div > div, .activity-list > div > div { min-width: 0; }
 .recent-priority { align-self: stretch; background: #356df3; border-radius: 99px; min-height: 35px; }
 .recent-priority.low { background: #64a1ff; }
 .recent-priority.medium { background: #356df3; }
@@ -432,7 +433,8 @@ td { color: #4f5e76; font-size: 13px; }
 .recent-priority.critical { background: #eb5b70; }
 .recent-list b, .activity-list b { display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recent-list small, .activity-list small { color: #7d899e; display: block; font-size: 10px; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.activity-list > div { grid-template-columns: 34px 1fr auto; }
+.recent-overview .badge { justify-self: end; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
+.activity-list > div { grid-template-columns: 34px minmax(0, 1fr) auto; overflow: hidden; }
 .activity-list > div > span { align-items: center; background: #eef2f8; border-radius: 9px; color: #64728b; display: flex; height: 32px; justify-content: center; width: 32px; }
 .activity-list svg { height: 15px; width: 15px; }
 .activity-list time { color: #8a96a9; font-size: 9px; white-space: nowrap; }
