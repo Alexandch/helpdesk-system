@@ -1,7 +1,9 @@
+import base64
 import logging
 import smtplib
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from email.message import EmailMessage
 from uuid import uuid4
@@ -146,6 +148,68 @@ def send_email_via_mailtrap(user: User, title: str, body: str) -> str:
         raise RuntimeError(f"Mailtrap API error {exc.code}: {details}") from exc
 
 
+def gmail_access_token() -> str:
+    payload = urllib.parse.urlencode(
+        {
+            "client_id": settings.gmail_client_id,
+            "client_secret": settings.gmail_client_secret,
+            "refresh_token": settings.gmail_refresh_token,
+            "grant_type": "refresh_token",
+        }
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        "https://oauth2.googleapis.com/token",
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Gmail OAuth error {exc.code}: {details}") from exc
+
+    access_token = result.get("access_token")
+    if not access_token:
+        raise RuntimeError("Gmail OAuth response does not contain access_token")
+    return access_token
+
+
+def send_email_via_gmail_api(user: User, title: str, body: str) -> str:
+    if not settings.gmail_client_id or not settings.gmail_client_secret or not settings.gmail_refresh_token:
+        logger.warning("Email delivery is enabled, but Gmail API credentials are not configured")
+        return "gmail_api_not_configured"
+
+    message = EmailMessage()
+    message["Subject"] = title
+    message["From"] = settings.gmail_from or settings.smtp_from or settings.admin_email
+    message["To"] = user.email
+    message.set_content(body)
+
+    payload = json.dumps(
+        {"raw": base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")}
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {gmail_access_token()}",
+            "Content-Type": "application/json",
+            "User-Agent": "HelpDesk-System/1.0",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            if 200 <= response.status < 300:
+                return "sent"
+            return f"gmail_api_http_{response.status}"
+    except urllib.error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Gmail API error {exc.code}: {details}") from exc
+
+
 def send_email_notification(user: User, title: str, body: str) -> str:
     if not settings.email_delivery_enabled:
         logger.info("Email notification skipped by settings: user=%s title=%s", user.email, title)
@@ -159,6 +223,8 @@ def send_email_notification(user: User, title: str, body: str) -> str:
         status = send_email_via_resend(user, title, body)
     elif provider == "mailtrap":
         status = send_email_via_mailtrap(user, title, body)
+    elif provider == "gmail_api":
+        status = send_email_via_gmail_api(user, title, body)
     elif provider == "smtp":
         status = send_email_via_smtp(user, title, body)
     else:

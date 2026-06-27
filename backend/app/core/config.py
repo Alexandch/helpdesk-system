@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     mailtrap_inbox_id: str | None = None
     mailtrap_from: str = "HelpDesk <mailtrap@example.com>"
     mailtrap_api_base_url: str = "https://sandbox.api.mailtrap.io/api/send"
+    gmail_client_id: str | None = None
+    gmail_client_secret: str | None = None
+    gmail_refresh_token: str | None = None
+    gmail_from: str | None = None
 
     telegram_notifications_enabled: bool = False
     telegram_bot_token: str | None = None
