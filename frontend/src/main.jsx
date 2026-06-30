@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
-  Activity, BarChart3, Bell, CheckCheck, ChevronRight, Database, FileClock,
+  Activity, BarChart3, CheckCheck, ChevronRight, Database, FileClock,
   Gauge, Languages, LoaderCircle, LogOut, Mail, MessageSquare, Plus, RefreshCw,
   Search, Send, Server, ShieldCheck, Ticket, TrendingUp, UserCog, Users, X
 } from "lucide-react";
@@ -635,7 +635,7 @@ function Dashboard({ user, onLogout, language, setLanguage, t }) {
           {user.role === "SUPER_ADMIN" && <button className={section === "overview" ? "nav active" : "nav"} onClick={() => setSection("overview")}><Gauge />{t("overview")}</button>}
           <button className={section === "tickets" ? "nav active" : "nav"} onClick={() => setSection("tickets")}><Ticket />{t("tickets")}</button>
           {user.role === "SUPER_ADMIN" && <button className={section === "users" ? "nav active" : "nav"} onClick={() => setSection("users")}><Users />{t("users")}</button>}
-          <button className={section === "notifications" ? "nav active" : "nav"} onClick={() => setSection("notifications")}><Bell />{t("notifications")}{unread > 0 && <span className="counter">{unread}</span>}</button>
+          <button className={section === "notifications" ? "nav active" : "nav"} onClick={() => setSection("notifications")}><FileClock />{t("notifications")}{unread > 0 && <span className="counter">{unread}</span>}</button>
           {user.role !== "SUPER_ADMIN" && <button className={section === "messages" ? "nav active" : "nav"} onClick={() => setSection("messages")}><MessageSquare />{t("messages")}{unreadMessages > 0 && <span className="counter">{unreadMessages}</span>}</button>}
           {user.role === "SUPER_ADMIN" && <button className={section === "audit" ? "nav active" : "nav"} onClick={() => setSection("audit")}><FileClock />{t("audit")}</button>}
         </nav>
